@@ -1,0 +1,135 @@
+# GitHub标签配置文件
+# 
+# 任务类型标签
+- name: "project"
+  description: "大型项目或任务线"
+  color: "5319E7"
+
+- name: "epic"
+  description: "大功能或史诗任务"
+  color: "3E4B9E"
+
+- name: "task-with-deadline"
+  description: "有截止日期的任务"
+  color: "D93F0B"
+
+- name: "task-open"
+  description: "开放性任务，无固定截止日期"
+  color: "0E8A16"
+
+- name: "subtask"
+  description: "子任务"
+  color: "C5DEF5"
+
+# 模块标签
+- name: "module:frontend"
+  description: "前端相关"
+  color: "006B75"
+
+- name: "module:backend"
+  description: "后端相关"
+  color: "1D76DB"
+
+- name: "module:database"
+  description: "数据库相关"
+  color: "0052CC"
+
+- name: "module:devops"
+  description: "运维相关"
+  color: "5843AD"
+
+- name: "module:design"
+  description: "设计相关"
+  color: "F9D0C4"
+
+- name: "module:docs"
+  description: "文档相关"
+  color: "D4C5F9"
+
+- name: "module:testing"
+  description: "测试相关"
+  color: "BFD4F2"
+
+# 优先级标签
+- name: "priority:critical"
+  description: "紧急且重要"
+  color: "B60205"
+
+- name: "priority:high"
+  description: "高优先级"
+  color: "D93F0B"
+
+- name: "priority:medium"
+  description: "中等优先级"
+  color: "FBCA04"
+
+- name: "priority:low"
+  description: "低优先级"
+  color: "0E8A16"
+
+# 状态标签
+- name: "status:planning"
+  description: "规划中"
+  color: "D4C5F9"
+
+- name: "status:in-progress"
+  description: "进行中"
+  color: "0052CC"
+
+- name: "status:blocked"
+  description: "被阻塞"
+  color: "B60205"
+
+- name: "status:review"
+  description: "待审核"
+  color: "FBCA04"
+
+- name: "status:testing"
+  description: "测试中"
+  color: "C2E0C6"
+
+# 类型标签
+- name: "type:feature"
+  description: "新功能"
+  color: "84B6EB"
+
+- name: "type:enhancement"
+  description: "功能改进"
+  color: "A2EEEF"
+
+- name: "type:bug"
+  description: "缺陷修复"
+  color: "D73A4A"
+
+- name: "type:refactoring"
+  description: "代码重构"
+  color: "FEF2C0"
+
+- name: "type:documentation"
+  description: "文档相关"
+  color: "0075CA"
+
+- name: "type:research"
+  description: "研究探索"
+  color: "D876E3"
+
+# 其他标签
+- name: "help-wanted"
+  description: "需要帮助"
+  color: "008672"
+
+- name: "good-first-issue"
+  description: "适合新手的任务"
+  color: "7057FF"
+
+- name: "duplicate"
+  description: "重复的Issue"
+  color: "CFD3D7"
+
+- name: "wontfix"
+  description: "不会修复"
+  color: "FFFFFF"
+
+- name: "archived"
+  description: "已归档"
+  color: "E4E669"
