@@ -98,6 +98,7 @@ jobs:
             }
             
             // 构建 AI 提示词
+            // Note: 使用字符串拼接而非模板字面量以避免 YAML 解析问题
             const currentDate = new Date().toISOString().split('T')[0];
             const systemPrompt = '你是一个专业的任务管理助手。用户会用中文或英文描述一个任务，你需要将其解析为结构化的 TODO。\n\n' +
               '当前日期: ' + currentDate + '\n\n' +
@@ -310,8 +311,8 @@ jobs:
                 body: successMessage
               });
               
-              // 如果是通过 ai-todo-inbox 标签触发的，关闭原 Issue
-              if (context.eventName === 'issues' && context.payload.action === 'labeled') {
+              // 如果是通过 ai-todo-inbox 标签触发的，且不是评论触发，关闭原 Issue
+              if (context.eventName === 'issues' && context.payload.issue.labels.some(label => label.name === 'ai-todo-inbox')) {
                 await github.rest.issues.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
