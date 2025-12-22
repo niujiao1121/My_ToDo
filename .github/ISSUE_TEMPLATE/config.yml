@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 查看文档
+    url: https://github.com/niujiao1121/My_ToDo/blob/main/docs/TODO_STRUCTURE.md
+    about: 了解如何使用树状TODO结构
+  - name: 💬 讨论区
+    url: https://github.com/niujiao1121/My_ToDo/discussions
+    about: 参与讨论，分享经验和最佳实践
