@@ -21,6 +21,10 @@
   description: "子任务"
   color: "C5DEF5"
 
+- name: "ai-todo-inbox"
+  description: "AI待处理的TODO输入"
+  color: "EDEDED"
+
 # 模块标签
 - name: "module:frontend"
   description: "前端相关"

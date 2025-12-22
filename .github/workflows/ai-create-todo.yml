@@ -1,0 +1,362 @@
+name: AI 自动创建 TODO
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  ai-create-todo:
+    runs-on: ubuntu-latest
+    
+    # 只在以下情况运行：
+    # 1. Issue 带有 ai-todo-inbox 标签
+    # 2. 评论以 /todo 开头
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'ai-todo-inbox')) ||
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/todo'))
+    
+    steps:
+      - name: 检查权限
+        id: check-permission
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // 检查用户是否是仓库成员或协作者
+            try {
+              const { data: permission } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.actor
+              });
+              
+              const hasPermission = ['admin', 'write', 'maintain'].includes(permission.permission);
+              
+              if (!hasPermission) {
+                const issueNumber = context.payload.issue.number;
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: '❌ 抱歉，只有仓库成员可以使用 AI TODO 创建功能。'
+                });
+                core.setFailed('用户没有足够的权限');
+              }
+              
+              return hasPermission;
+            } catch (error) {
+              core.error('检查权限时出错：' + error.message);
+              return false;
+            }
+
+      - name: AI 解析并创建 TODO
+        if: steps.check-permission.outputs.result == 'true'
+        uses: actions/github-script@v7
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          script: |
+            const https = require('https');
+            
+            // 获取用户输入
+            let userInput = '';
+            let sourceIssueNumber = null;
+            
+            if (context.eventName === 'issues') {
+              userInput = context.payload.issue.body || '';
+              sourceIssueNumber = context.payload.issue.number;
+            } else if (context.eventName === 'issue_comment') {
+              const comment = context.payload.comment.body;
+              userInput = comment.replace(/^\/todo\s+/, '').trim();
+              sourceIssueNumber = context.payload.issue.number;
+            }
+            
+            if (!userInput) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: '❌ 请提供要创建的 TODO 内容。'
+              });
+              return;
+            }
+            
+            // 检查 OpenAI API Key
+            if (!process.env.OPENAI_API_KEY) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: '❌ OpenAI API Key 未配置。请在仓库的 Secrets 中添加 `OPENAI_API_KEY`。\n\n配置步骤：https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/blob/main/docs/AI_SETUP.md'
+              });
+              return;
+            }
+            
+            // 构建 AI 提示词
+            const currentDate = new Date().toISOString().split('T')[0];
+            const systemPrompt = `你是一个专业的任务管理助手。用户会用中文或英文描述一个任务，你需要将其解析为结构化的 TODO。
+
+当前日期: ${currentDate}
+
+请分析用户输入，提取以下信息并以 JSON 格式返回：
+
+{
+  "title": "简洁明了的任务标题（10-50字）",
+  "description": "详细的任务描述，包含背景和具体要做的事情",
+  "due_date": "截止日期 YYYY-MM-DD 格式，如果用户提到了日期相关的词（今天、明天、下周等）则计算具体日期，否则为 null",
+  "priority": "优先级: critical/high/medium/low，根据用户用词判断（紧急、重要等），默认 medium",
+  "module": "模块类型: frontend/backend/database/devops/design/docs/testing，根据任务内容推断，可以为 null",
+  "estimated_hours": "预计工作量（小时数），如果用户提到了工作量则提取，否则根据任务复杂度估算，格式如 '8' 或 '16-24'",
+  "acceptance_criteria": ["验收标准1", "验收标准2"],
+  "task_checklist": ["步骤1", "步骤2"],
+  "task_type": "任务类型: deadline 或 open，如果有截止日期用 deadline，否则用 open"
+}
+
+日期识别规则：
+- "今天" -> ${currentDate}
+- "明天" -> 当前日期+1天
+- "后天" -> 当前日期+2天  
+- "下周" -> 当前日期+7天
+- "下周一/二/..." -> 计算下周对应的日期
+- "下月" -> 当前日期+30天
+- "月底" -> 当月最后一天
+- 具体日期如 "12月25日" -> 转换为 YYYY-MM-DD
+
+优先级判断：
+- 包含"紧急"、"urgent"、"ASAP"、"立即" -> critical
+- 包含"重要"、"high"、"关键" -> high  
+- 包含"一般"、"normal"、"medium" -> medium
+- 包含"不急"、"low"、"可选" -> low
+- 默认 -> medium
+
+模块推断：
+- 包含"前端"、"UI"、"页面"、"React"、"Vue" -> frontend
+- 包含"后端"、"API"、"服务器"、"数据库" -> backend
+- 包含"数据库"、"SQL"、"MongoDB" -> database
+- 包含"部署"、"CI/CD"、"Docker" -> devops
+- 包含"设计"、"UI设计"、"原型" -> design
+- 包含"文档"、"说明" -> docs
+- 包含"测试" -> testing
+
+只返回 JSON，不要有任何其他文字。`;
+
+            const userPrompt = `用户输入：\n${userInput}`;
+            
+            // 调用 OpenAI API
+            let aiResponse;
+            try {
+              const postData = JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.3,
+                response_format: { type: 'json_object' }
+              });
+              
+              const options = {
+                hostname: 'api.openai.com',
+                path: '/v1/chat/completions',
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                  'Content-Length': Buffer.byteLength(postData)
+                }
+              };
+              
+              aiResponse = await new Promise((resolve, reject) => {
+                const req = https.request(options, (res) => {
+                  let data = '';
+                  res.on('data', (chunk) => { data += chunk; });
+                  res.on('end', () => {
+                    if (res.statusCode === 200) {
+                      resolve(JSON.parse(data));
+                    } else {
+                      reject(new Error(`API 请求失败: ${res.statusCode} - ${data}`));
+                    }
+                  });
+                });
+                
+                req.on('error', (error) => reject(error));
+                req.write(postData);
+                req.end();
+              });
+              
+              core.info('OpenAI API 响应：' + JSON.stringify(aiResponse));
+              
+            } catch (error) {
+              core.error('调用 OpenAI API 失败：' + error.message);
+              
+              // 失败时使用基本信息创建 Issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: `❌ AI 解析失败：${error.message}\n\n将使用基本信息创建 TODO...`
+              });
+              
+              // 创建简单的 Issue
+              const basicIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '[TODO] ' + userInput.substring(0, 50),
+                body: `## 📋 任务描述\n\n${userInput}\n\n---\n\n*此 TODO 由 AI 助手自动创建*`,
+                labels: ['task-open', 'priority:medium'],
+                assignees: [context.actor]
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: `✅ 已创建基本 TODO: #${basicIssue.data.number}`
+              });
+              
+              return;
+            }
+            
+            // 解析 AI 响应
+            let parsedData;
+            try {
+              const content = aiResponse.choices[0].message.content;
+              parsedData = JSON.parse(content);
+              core.info('解析后的数据：' + JSON.stringify(parsedData));
+            } catch (error) {
+              core.error('解析 AI 响应失败：' + error.message);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: `❌ 解析 AI 响应失败，请稍后重试。`
+              });
+              return;
+            }
+            
+            // 构建 Issue 内容
+            const taskType = parsedData.task_type === 'deadline' ? 'task-with-deadline' : 'task-open';
+            const titlePrefix = taskType === 'task-with-deadline' ? '[TASK]' : '[OPEN]';
+            
+            let issueBody = '';
+            
+            if (taskType === 'task-with-deadline') {
+              // 有截止日期的任务模板
+              issueBody = `## 📋 任务描述
+
+${parsedData.description}
+
+## ⏰ 时间要求
+
+**截止日期**: ${parsedData.due_date || '待定'} ⏰
+**预计工作量**: ${parsedData.estimated_hours || '待评估'}小时
+
+## ✅ 验收标准
+
+${parsedData.acceptance_criteria && parsedData.acceptance_criteria.length > 0 
+  ? parsedData.acceptance_criteria.map(c => `- [ ] ${c}`).join('\n')
+  : '- [ ] 待补充'}
+
+## 📝 任务清单
+
+${parsedData.task_checklist && parsedData.task_checklist.length > 0
+  ? parsedData.task_checklist.map(t => `- [ ] ${t}`).join('\n')
+  : '- [ ] 待补充'}
+
+---
+
+*此 TODO 由 AI 助手根据输入自动创建*
+*原始输入来自: #${sourceIssueNumber}*`;
+            } else {
+              // 开放性任务模板
+              issueBody = `## 📋 任务描述
+
+${parsedData.description}
+
+## 🎯 完成条件
+
+**预计工作量**: ${parsedData.estimated_hours || '待评估'}小时
+
+**验收标准**: 
+${parsedData.acceptance_criteria && parsedData.acceptance_criteria.length > 0 
+  ? parsedData.acceptance_criteria.map(c => `- [ ] ${c}`).join('\n')
+  : '- [ ] 待补充'}
+
+## 📝 实现思路
+
+${parsedData.task_checklist && parsedData.task_checklist.length > 0
+  ? parsedData.task_checklist.map((t, i) => `${i + 1}. ${t}`).join('\n')
+  : '待补充'}
+
+---
+
+*此 TODO 由 AI 助手根据输入自动创建*
+*原始输入来自: #${sourceIssueNumber}*`;
+            }
+            
+            // 确定标签
+            const labels = [taskType, `priority:${parsedData.priority || 'medium'}`];
+            if (parsedData.module) {
+              labels.push(`module:${parsedData.module}`);
+            }
+            
+            // 创建新 Issue
+            try {
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `${titlePrefix} ${parsedData.title}`,
+                body: issueBody,
+                labels: labels,
+                assignees: [context.actor]
+              });
+              
+              // 回复成功消息
+              const successMessage = `✅ **AI 已成功创建 TODO!**
+
+📌 **新 Issue**: #${newIssue.data.number}
+📝 **标题**: ${parsedData.title}
+⏰ **截止日期**: ${parsedData.due_date || '无'}
+🏷️ **优先级**: ${parsedData.priority || 'medium'}
+${parsedData.module ? `📦 **模块**: ${parsedData.module}` : ''}
+
+[查看详情 →](${newIssue.data.html_url})
+
+---
+
+💡 提示：AI 自动解析可能不完全准确，请查看并补充完善信息。`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: successMessage
+              });
+              
+              // 如果是通过 ai-todo-inbox 标签触发的，关闭原 Issue
+              if (context.eventName === 'issues' && context.payload.action === 'labeled') {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: sourceIssueNumber,
+                  state: 'closed',
+                  state_reason: 'completed'
+                });
+              }
+              
+              core.info(`成功创建 Issue #${newIssue.data.number}`);
+              
+            } catch (error) {
+              core.error('创建 Issue 失败：' + error.message);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: `❌ 创建 Issue 失败：${error.message}`
+              });
+            }
