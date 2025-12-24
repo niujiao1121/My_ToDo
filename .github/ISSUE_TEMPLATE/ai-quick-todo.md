@@ -1,6 +1,6 @@
 ---
 name: 🤖 AI 快速创建 TODO
-about: 一句话描述你的任务，AI 自动帮你创建格式化的 TODO
+about: 一句话描述你的任务，阿里云 AI 自动帮你创建格式化的 TODO
 title: ''
 labels: ['ai-todo-inbox']
 assignees: ''
@@ -37,8 +37,13 @@ assignees: ''
 • 创建后请检查并补充完善信息
 
 ⚙️ 配置说明：
-首次使用需要配置 OpenAI API Key，详见：
+首次使用需要配置阿里云千问 API Key，详见：
 https://github.com/niujiao1121/My_ToDo/blob/main/docs/AI_SETUP.md
+
+💡 阿里云千问优势：
+• 中文理解能力出色，专为中文优化
+• 成本低廉，新用户有大量免费额度
+• 国内访问稳定快速，无需翻墙
 -->
 
 ## 我要做的事

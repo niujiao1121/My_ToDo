@@ -68,7 +68,7 @@
 - ✅ 自动分配给创建者
 
 **配置说明**：
-首次使用需要配置 OpenAI API Key（很简单，费用很低）：
+首次使用需要配置阿里云千问 API Key（很简单，费用很低）：
 👉 [查看详细配置步骤](./docs/AI_SETUP.md)
 
 **命令行快速创建**：
@@ -195,23 +195,24 @@ AI 输入 3：
 
 ---
 
-## ⚙️ 配置 OpenAI API（使用 AI 功能必需）
+## ⚙️ 配置阿里云 AI（使用 AI 功能必需）
 
-要使用 AI 快速创建功能，需要配置 OpenAI API Key。
+要使用 AI 快速创建功能，需要配置阿里云千问 API Key。
 
 ### 快速配置步骤
 
-1. **获取 OpenAI API Key**
-   - 访问 [OpenAI Platform](https://platform.openai.com/api-keys)
-   - 注册/登录账户
+1. **获取阿里云 API Key**
+   - 访问 [阿里云百炼平台](https://dashscope.aliyun.com/)
+   - 注册/登录阿里云账户
+   - 开通百炼服务和通义千问模型
    - 创建新的 API Key
-   - 复制保存 Key（只显示一次）
+   - 复制保存 Key（格式：`sk-xxxxxxxxxxxxxxxx`）
 
 2. **添加到 GitHub Secrets**
    - 进入仓库的 Settings → Secrets and variables → Actions
    - 点击 "New repository secret"
-   - Name: `OPENAI_API_KEY`
-   - Secret: 粘贴你的 API Key
+   - Name: `DASHSCOPE_API_KEY`
+   - Secret: 粘贴你的阿里云 API Key
    - 保存
 
 3. **配置工作流权限**
@@ -225,9 +226,19 @@ AI 输入 3：
 
 ### 费用说明
 
-- 使用 `gpt-4o-mini` 模型，成本非常低
-- 平均每次创建约 $0.001（一毛钱可以创建约 100 个 TODO）
-- 可在 OpenAI 平台设置每月消费上限
+- 使用 `qwen-plus` 模型，成本非常低且实惠
+- **新用户福利**：注册即获大量免费调用额度 🎁
+- 平均每次创建约 ¥0.005-0.01（一元钱可以创建约 100-200 个 TODO）
+- 相比 OpenAI，价格更低、无需翻墙、中文理解更好
+- 可在阿里云控制台设置每月消费预警
+
+### 为什么选择阿里云千问？
+
+- ✅ **中文理解出色**：专为中文优化，理解更准确
+- ✅ **价格实惠**：比 OpenAI 更经济
+- ✅ **访问稳定**：国内访问无障碍
+- ✅ **新用户福利**：大量免费额度
+- ✅ **支付便捷**：支持支付宝、微信支付
 
 ### 详细配置文档
 

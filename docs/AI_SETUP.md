@@ -1,66 +1,120 @@
 # AI TODO 自动创建系统 - 配置指南
 
-本文档详细说明如何配置 AI TODO 自动创建功能。
+本文档详细说明如何配置 AI TODO 自动创建功能，使用阿里云通义千问模型。
 
 ## 📋 前置要求
 
 - GitHub 仓库管理员权限（用于配置 Secrets）
-- OpenAI API Key（用于调用 GPT-4o-mini 模型）
+- 阿里云账号（用于获取 API Key）
+- 阿里云百炼平台的 DashScope API Key（用于调用千问模型）
 
-## 🔑 步骤 1：获取 OpenAI API Key
+## 🔑 步骤 1：获取阿里云 API Key
 
-### 1.1 注册 OpenAI 账户
+### 1.1 注册/登录阿里云账户
 
-1. 访问 [OpenAI Platform](https://platform.openai.com/)
-2. 如果没有账户，点击 "Sign up" 注册
-3. 如果已有账户，点击 "Log in" 登录
+1. 访问 [阿里云官网](https://www.aliyun.com/)
+2. 如果没有账户，点击右上角 "免费注册"
+3. 按照提示完成账号注册（需要手机号验证和实名认证）
+4. 如果已有账户，直接点击 "登录"
 
-### 1.2 创建 API Key
+### 1.2 开通百炼平台和通义千问服务
 
-1. 登录后，点击右上角头像
-2. 选择 "View API keys" 或直接访问 https://platform.openai.com/api-keys
-3. 点击 "Create new secret key"
+1. 登录后，访问 [阿里云百炼平台](https://dashscope.aliyun.com/)
+2. 首次访问会提示开通服务，点击 "开通服务"
+3. 阅读并同意服务协议
+4. 确认开通（免费开通，无需预付费）
+
+### 1.3 创建 API Key
+
+1. 在百炼平台首页，点击右上角头像或用户中心
+2. 选择 "API-KEY 管理" 或直接访问 https://dashscope.console.aliyun.com/apiKey
+3. 点击 "创建新的 API-KEY"
 4. 给 Key 起个名字（如 "My_ToDo_AI"）
-5. **重要**：立即复制生成的 API Key，关闭窗口后将无法再次查看
-6. 将 API Key 保存在安全的地方
+5. **重要**：立即复制生成的 API Key（格式类似 `sk-xxxxxxxxxxxxxxxx`）
+6. 将 API Key 保存在安全的地方（关闭后仍可查看，但建议立即保存）
 
-### 1.3 费用说明
+### 1.4 激活通义千问模型
 
-- 本系统使用 `gpt-4o-mini` 模型，成本非常低
-- 参考价格（2024年）：
-  - 输入：$0.15 / 1M tokens
-  - 输出：$0.60 / 1M tokens
+1. 在百炼平台左侧菜单，找到 "模型广场"
+2. 搜索 "通义千问" 或直接访问模型列表
+3. 找到以下模型并确保已开通：
+   - **qwen-plus**（推荐，性能和成本平衡）
+   - qwen-turbo（可选，速度快成本低）
+   - qwen-max（可选，效果最好但成本较高）
+4. 如未开通，点击 "立即开通" 按钮
+
+### 1.5 费用说明和新用户福利
+
+**免费额度（新用户）**：
+- 新用户注册后可获得大量免费调用额度
+- 具体额度请查看百炼平台的最新活动页面
+
+**正式收费标准（参考价格）**：
+- **qwen-plus**（推荐）：
+  - 输入：¥0.004 / 1,000 tokens（约 1,000 汉字）
+  - 输出：¥0.012 / 1,000 tokens
+- **qwen-turbo**（经济型）：
+  - 输入：¥0.002 / 1,000 tokens
+  - 输出：¥0.006 / 1,000 tokens
+- **qwen-max**（旗舰版）：
+  - 输入：¥0.04 / 1,000 tokens
+  - 输出：¥0.12 / 1,000 tokens
+
+**成本估算**：
 - 平均每次 TODO 创建约消耗 500-1000 tokens
-- **估算**：创建 1000 个 TODO 约花费 $0.50-1.00
+- 使用 qwen-plus：创建 1,000 个 TODO 约花费 ¥4-8
+- 使用 qwen-turbo：创建 1,000 个 TODO 约花费 ¥2-4
+- **非常经济实惠！** 💰
 
-## ⚙️ 步骤 2：配置 GitHub Secrets
+## 🎯 步骤 2：选择合适的模型
 
-### 2.1 进入仓库设置
+系统默认使用 **qwen-plus**，这是性能和成本的最佳平衡。你也可以根据需求修改：
+
+### 模型对比
+
+| 模型 | 特点 | 适用场景 | 相对成本 |
+|------|------|----------|----------|
+| **qwen-plus** | 性能优秀，成本适中 | 日常使用推荐，默认选项 | 中等 |
+| qwen-turbo | 响应快速，成本最低 | 大批量任务或预算有限 | 低 |
+| qwen-max | 效果最好，理解最准确 | 重要项目或复杂任务 | 高 |
+
+### 如何更改模型
+
+如需使用其他模型，修改 `.github/workflows/ai-create-todo.yml` 文件第 148 行：
+
+```yaml
+# 将 'qwen-plus' 改为 'qwen-turbo' 或 'qwen-max'
+model: 'qwen-plus',
+```
+
+## ⚙️ 步骤 3：配置 GitHub Secrets
+
+### 3.1 进入仓库设置
 
 1. 打开你的 GitHub 仓库
 2. 点击顶部的 "Settings"（设置）标签
 3. 在左侧菜单中找到 "Secrets and variables"
 4. 点击展开，选择 "Actions"
 
-### 2.2 添加 OPENAI_API_KEY
+### 3.2 添加 DASHSCOPE_API_KEY
 
 1. 点击右上角的 "New repository secret" 按钮
-2. 在 "Name" 字段输入：`OPENAI_API_KEY`（必须完全一致）
-3. 在 "Secret" 字段粘贴你在步骤 1 中获取的 OpenAI API Key
+2. 在 "Name" 字段输入：`DASHSCOPE_API_KEY`（必须完全一致）
+3. 在 "Secret" 字段粘贴你在步骤 1 中获取的阿里云 API Key
 4. 点击 "Add secret" 保存
 
-### 2.3 配置示意图
+### 3.3 配置示意图
 
 ```
 仓库 → Settings → Secrets and variables → Actions → New repository secret
 
-Name: OPENAI_API_KEY
-Secret: sk-proj-xxxxxxxxxxxxx...
+Name: DASHSCOPE_API_KEY
+Secret: sk-xxxxxxxxxxxxxxxx...
 ```
 
-## 🔐 步骤 3：配置工作流权限
+## 🔐 步骤 4：配置工作流权限
 
-### 3.1 检查 Actions 权限
+### 4.1 检查 Actions 权限
 
 1. 在仓库的 "Settings" 页面
 2. 在左侧菜单找到 "Actions" → "General"
@@ -69,7 +123,7 @@ Secret: sk-proj-xxxxxxxxxxxxx...
 5. 勾选 "Allow GitHub Actions to create and approve pull requests"
 6. 点击 "Save" 保存
 
-### 3.2 权限说明
+### 4.2 权限说明
 
 AI TODO 工作流需要以下权限：
 - **issues: write** - 创建和更新 Issues
@@ -77,9 +131,9 @@ AI TODO 工作流需要以下权限：
 
 这些权限已在工作流文件中声明，但需要仓库级别的权限支持。
 
-## ✅ 步骤 4：验证配置
+## ✅ 步骤 5：验证配置
 
-### 4.1 测试 AI TODO 创建
+### 5.1 测试 AI TODO 创建
 
 1. **方式一：使用 AI 快速创建模板**
    - 进入仓库的 Issues 页面
@@ -87,7 +141,7 @@ AI TODO 工作流需要以下权限：
    - 选择 "🤖 AI 快速创建 TODO" 模板
    - 在 "我要做的事" 下方输入：
      ```
-     明天前完成测试任务，验证 AI TODO 系统是否正常工作
+     明天前完成测试任务，验证阿里云 AI TODO 系统是否正常工作
      ```
    - 点击 "Submit new issue"
    - 等待几秒钟，查看评论区是否出现 AI 创建的成功消息
@@ -95,11 +149,11 @@ AI TODO 工作流需要以下权限：
 2. **方式二：使用命令行**
    - 在任何 Issue 下评论：
      ```
-     /todo 测试 AI TODO 功能是否正常
+     /todo 测试阿里云千问 AI TODO 功能是否正常
      ```
    - 等待几秒钟，查看是否自动创建新 Issue
 
-### 4.2 预期结果
+### 5.2 预期结果
 
 成功配置后，你应该会看到：
 
@@ -135,15 +189,15 @@ AI TODO 工作流需要以下权限：
 - 或手动给 Issue 添加 `ai-todo-inbox` 标签
 - 确保评论格式正确：`/todo 任务内容`
 
-### 问题 2：提示 "OpenAI API Key 未配置"
+### 问题 2：提示 "阿里云 API Key 未配置"
 
 **可能原因**：
-- GitHub Secrets 中没有添加 `OPENAI_API_KEY`
+- GitHub Secrets 中没有添加 `DASHSCOPE_API_KEY`
 - Secret 名称拼写错误（必须完全一致）
 
 **解决方法**：
 1. 检查 Settings → Secrets and variables → Actions
-2. 确认存在名为 `OPENAI_API_KEY` 的 Secret
+2. 确认存在名为 `DASHSCOPE_API_KEY` 的 Secret
 3. 如果不存在或名称错误，重新添加
 
 ### 问题 3：提示权限不足
@@ -154,24 +208,30 @@ AI TODO 工作流需要以下权限：
 
 **解决方法**：
 1. 确认你是仓库的所有者、管理员或协作者
-2. 检查 Actions 权限设置（见步骤 3）
+2. 检查 Actions 权限设置（见步骤 4）
 3. 如果是私有仓库，确保 Actions 已启用
 
 ### 问题 4：AI 解析失败
 
 **可能原因**：
-- OpenAI API Key 无效或过期
-- OpenAI 账户余额不足
+- 阿里云 API Key 无效或过期
+- 阿里云账户余额不足或欠费
+- 模型服务未开通
 - 网络连接问题
 
 **解决方法**：
 1. 验证 API Key 是否有效：
-   - 访问 https://platform.openai.com/api-keys
+   - 访问 https://dashscope.console.aliyun.com/apiKey
    - 检查 Key 状态
-2. 检查 OpenAI 账户余额：
-   - 访问 https://platform.openai.com/account/billing
-   - 确保有足够余额
-3. 如果持续失败，系统会创建基本的 TODO（不包含 AI 解析）
+2. 检查阿里云账户余额：
+   - 访问阿里云控制台的费用中心
+   - 确保账户无欠费，有足够余额或免费额度
+3. 确认模型服务已开通：
+   - 访问百炼平台模型广场
+   - 确认 qwen-plus 已激活
+4. 查看工作流日志：
+   - 进入 Actions 标签，查看详细错误信息
+5. 如果持续失败，系统会创建基本的 TODO（不包含 AI 解析）
 
 ### 问题 5：创建的 Issue 格式不理想
 
@@ -185,6 +245,17 @@ AI TODO 工作流需要以下权限：
 3. AI 创建后，手动编辑补充完善信息
 4. 参考 `examples/ai-todo-examples.md` 中的最佳实践
 
+### 问题 6：API 调用超时或网络错误
+
+**可能原因**：
+- GitHub Actions 网络环境问题
+- 阿里云服务临时故障
+
+**解决方法**：
+1. 重试创建任务
+2. 查看阿里云服务状态页面
+3. 如果持续失败，联系阿里云技术支持
+
 ## 📊 监控和维护
 
 ### 查看工作流运行日志
@@ -193,7 +264,7 @@ AI TODO 工作流需要以下权限：
 2. 找到 "AI 自动创建 TODO" 工作流
 3. 点击具体的运行记录
 4. 查看详细日志，包括：
-   - OpenAI API 调用
+   - 阿里云 API 调用
    - AI 响应内容
    - Issue 创建过程
    - 错误信息（如果有）
@@ -201,27 +272,30 @@ AI TODO 工作流需要以下权限：
 ### 成本控制
 
 1. **监控 API 使用量**：
-   - 访问 https://platform.openai.com/account/usage
+   - 访问 https://dashscope.console.aliyun.com/
+   - 在控制台查看 API 调用统计
    - 查看每日/每月的 token 使用量和费用
 
-2. **设置用量限制**：
-   - 在 OpenAI Platform 设置每月最大消费限额
+2. **设置费用预警**：
+   - 在阿里云控制台的费用中心
+   - 设置消费预警阈值
    - 避免意外超支
 
 3. **优化使用**：
    - 简单任务可以手动创建
    - 复杂或批量任务使用 AI 创建
    - 定期清理不需要的 API Keys
+   - 根据实际需求选择合适的模型（turbo/plus/max）
 
 ## 🔄 更新和升级
 
 ### 更新 API Key
 
 如果需要更换 API Key：
-1. 在 OpenAI Platform 创建新的 Key
-2. 在 GitHub Secrets 中编辑 `OPENAI_API_KEY`
+1. 在百炼平台创建新的 API Key
+2. 在 GitHub Secrets 中编辑 `DASHSCOPE_API_KEY`
 3. 粘贴新的 Key
-4. 可选：在 OpenAI Platform 删除旧 Key
+4. 可选：在百炼平台禁用或删除旧 Key
 
 ### 升级工作流
 
@@ -238,6 +312,7 @@ AI TODO 工作流需要以下权限：
 2. **查看文档**：阅读 `README.md` 和 `docs/` 目录下的其他文档
 3. **提交 Issue**：在仓库中创建新 Issue 描述问题
 4. **查看 Discussions**：在 GitHub Discussions 中搜索或提问
+5. **阿里云技术支持**：访问阿里云工单系统获取官方支持
 
 ## 🎓 最佳实践
 
@@ -245,17 +320,38 @@ AI TODO 工作流需要以下权限：
    - 不要将 API Key 提交到代码中
    - 定期轮换 API Key
    - 只给必要的人员分配仓库权限
+   - 使用 GitHub Secrets 安全存储密钥
 
 2. **成本优化**：
    - 提供清晰的输入，减少 AI 重试
    - 简单任务使用标准模板
    - 复杂任务使用 AI 创建
+   - 根据预算选择合适的模型
+   - 利用新用户免费额度
 
 3. **使用技巧**：
    - 在输入中明确说明日期、优先级、模块
    - 创建后检查并补充 AI 生成的内容
    - 利用 `/todo` 命令快速创建临时任务
+   - 充分利用千问的中文理解能力
+
+4. **中文优势**：
+   - 阿里云千问对中文的理解非常出色
+   - 可以使用更自然的中文表达
+   - 支持中文日期表达（明天、下周一、月底等）
+   - 理解中文语境中的优先级词汇（紧急、重要等）
+
+## 🌟 为什么选择阿里云千问？
+
+相比 OpenAI：
+
+1. **更好的中文支持**：千问专为中文优化，理解更准确
+2. **更低的成本**：价格比 GPT-4o-mini 更实惠
+3. **无需翻墙**：国内访问更稳定快速
+4. **支付便利**：支持支付宝、微信等本地支付方式
+5. **合规性**：符合中国数据安全和隐私法规
+6. **技术支持**：中文技术支持，响应更及时
 
 ---
 
-配置完成后，你就可以享受 AI 驱动的 TODO 管理了！🎉
+配置完成后，你就可以享受阿里云千问驱动的智能 TODO 管理了！🎉

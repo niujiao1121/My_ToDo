@@ -58,7 +58,7 @@ jobs:
         if: steps.check-permission.outputs.result == 'true'
         uses: actions/github-script@v7
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         with:
           script: |
             const https = require('https');
@@ -86,13 +86,13 @@ jobs:
               return;
             }
             
-            // 检查 OpenAI API Key
-            if (!process.env.OPENAI_API_KEY) {
+            // 检查阿里云 API Key
+            if (!process.env.DASHSCOPE_API_KEY) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: sourceIssueNumber,
-                body: '❌ OpenAI API Key 未配置。请在仓库的 Secrets 中添加 `OPENAI_API_KEY`。\n\n配置步骤：https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/blob/main/docs/AI_SETUP.md'
+                body: '❌ 阿里云 API Key 未配置。请在仓库的 Secrets 中添加 `DASHSCOPE_API_KEY`。\n\n配置步骤：https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/blob/main/docs/AI_SETUP.md'
               });
               return;
             }
@@ -141,26 +141,26 @@ jobs:
 
             const userPrompt = '用户输入：\n' + userInput;
             
-            // 调用 OpenAI API
+            // 调用阿里云千问 API
             let aiResponse;
             try {
               const postData = JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: 'qwen-plus',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.3,
-                response_format: { type: 'json_object' }
+                result_format: 'message'
               });
               
               const options = {
-                hostname: 'api.openai.com',
-                path: '/v1/chat/completions',
+                hostname: 'dashscope.aliyuncs.com',
+                path: '/compatible-mode/v1/chat/completions',
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY,
+                  'Authorization': 'Bearer ' + process.env.DASHSCOPE_API_KEY,
                   'Content-Length': Buffer.byteLength(postData)
                 }
               };
@@ -183,10 +183,10 @@ jobs:
                 req.end();
               });
               
-              core.info('OpenAI API 响应：' + JSON.stringify(aiResponse));
+              core.info('阿里云 API 响应：' + JSON.stringify(aiResponse));
               
             } catch (error) {
-              core.error('调用 OpenAI API 失败：' + error.message);
+              core.error('调用阿里云 API 失败：' + error.message);
               
               // 失败时使用基本信息创建 Issue
               await github.rest.issues.createComment({
@@ -255,7 +255,7 @@ jobs:
                 '## ✅ 验收标准\n\n' + acceptanceCriteria + '\n\n' +
                 '## 📝 任务清单\n\n' + taskChecklist + '\n\n' +
                 '---\n\n' +
-                '*此 TODO 由 AI 助手根据输入自动创建*\n' +
+                '*此 TODO 由阿里云 AI 助手根据输入自动创建*\n' +
                 '*原始输入来自: #' + sourceIssueNumber + '*';
             } else {
               // 开放性任务模板
@@ -272,7 +272,7 @@ jobs:
                 '**验收标准**: \n' + acceptanceCriteria + '\n\n' +
                 '## 📝 实现思路\n\n' + taskChecklist + '\n\n' +
                 '---\n\n' +
-                '*此 TODO 由 AI 助手根据输入自动创建*\n' +
+                '*此 TODO 由阿里云 AI 助手根据输入自动创建*\n' +
                 '*原始输入来自: #' + sourceIssueNumber + '*';
             }
             
