@@ -80,10 +80,10 @@
 
 ### 如何更改模型
 
-如需使用其他模型，修改 `.github/workflows/ai-create-todo.yml` 文件第 148 行：
+如需使用其他模型，修改 `.github/workflows/ai-create-todo.yml` 文件中的 `model` 参数：
 
 ```yaml
-# 将 'qwen-plus' 改为 'qwen-turbo' 或 'qwen-max'
+# 在 postData 的 JSON.stringify 中，将 'qwen-plus' 改为 'qwen-turbo' 或 'qwen-max'
 model: 'qwen-plus',
 ```
 

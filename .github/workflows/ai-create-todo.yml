@@ -151,7 +151,7 @@ jobs:
                   { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.3,
-                result_format: 'message'
+                response_format: { type: 'json_object' }
               });
               
               const options = {
