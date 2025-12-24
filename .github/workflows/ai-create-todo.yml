@@ -106,6 +106,7 @@ jobs:
               '{\n' +
               '  "title": "简洁明了的任务标题（10-50字）",\n' +
               '  "description": "详细的任务描述，包含背景和具体要做的事情",\n' +
+              '  "parent_issue": "父任务编号，如果用户提到 #数字、parent #数字、属于#数字、从属于#数字、子任务、subtask of 等，提取数字，否则为 null",\n' +
               '  "due_date": "截止日期 YYYY-MM-DD 格式，如果用户提到了日期相关的词（今天、明天、下周等）则计算具体日期，否则为 null",\n' +
               '  "priority": "优先级: critical/high/medium/low，根据用户用词判断（紧急、重要等），默认 medium",\n' +
               '  "module": "模块类型: frontend/backend/database/devops/design/docs/testing，根据任务内容推断，可以为 null",\n' +
@@ -114,6 +115,13 @@ jobs:
               '  "task_checklist": ["步骤1", "步骤2"],\n' +
               '  "task_type": "任务类型: deadline 或 open，如果有截止日期用 deadline，否则用 open"\n' +
               '}\n\n' +
+              '父任务识别规则：\n' +
+              '- "#数字" 格式（如 "#123"）-> 提取数字 123\n' +
+              '- "parent #数字"、"Parent: #数字" -> 提取数字\n' +
+              '- "属于 #数字"、"从属于 #数字" -> 提取数字\n' +
+              '- "是 #数字 的子任务" -> 提取数字\n' +
+              '- "subtask of #数字" -> 提取数字\n' +
+              '- 如果没有提到父任务 -> null\n\n' +
               '日期识别规则：\n' +
               '- "今天" -> ' + currentDate + '\n' +
               '- "明天" -> 当前日期+1天\n' +
@@ -237,6 +245,11 @@ jobs:
             const taskType = parsedData.task_type === 'deadline' ? 'task-with-deadline' : 'task-open';
             const titlePrefix = taskType === 'task-with-deadline' ? '[TASK]' : '[OPEN]';
             
+            // 添加父任务标记（如果指定了父任务）
+            const parentIssueSection = parsedData.parent_issue 
+              ? '\n## 🔗 父任务\n\n**Parent Issue**: #' + parsedData.parent_issue + '\n'
+              : '';
+            
             let issueBody = '';
             
             if (taskType === 'task-with-deadline') {
@@ -248,7 +261,7 @@ jobs:
                 ? parsedData.task_checklist.map(t => '- [ ] ' + t).join('\n')
                 : '- [ ] 待补充';
               
-              issueBody = '## 📋 任务描述\n\n' + parsedData.description + '\n\n' +
+              issueBody = '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n' +
                 '## ⏰ 时间要求\n\n' +
                 '**截止日期**: ' + (parsedData.due_date || '待定') + ' ⏰\n' +
                 '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
@@ -266,7 +279,7 @@ jobs:
                 ? parsedData.task_checklist.map((t, i) => (i + 1) + '. ' + t).join('\n')
                 : '待补充';
               
-              issueBody = '## 📋 任务描述\n\n' + parsedData.description + '\n\n' +
+              issueBody = '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n' +
                 '## 🎯 完成条件\n\n' +
                 '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
                 '**验收标准**: \n' + acceptanceCriteria + '\n\n' +
@@ -281,6 +294,10 @@ jobs:
             if (parsedData.module) {
               labels.push('module:' + parsedData.module);
             }
+            // 如果有父任务，添加 subtask 标签
+            if (parsedData.parent_issue) {
+              labels.push('subtask');
+            }
             
             // 创建新 Issue
             try {
@@ -293,13 +310,72 @@ jobs:
                 assignees: [context.actor]
               });
               
+              // 如果指定了父任务，尝试更新父任务
+              if (parsedData.parent_issue) {
+                try {
+                  const parentIssue = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: parseInt(parsedData.parent_issue)
+                  });
+                  
+                  // 在父任务中添加子任务链接
+                  const parentBody = parentIssue.data.body || '';
+                  const subtaskEntry = '- [ ] #' + newIssue.data.number + ' - ' + parsedData.title;
+                  
+                  // 查找是否已有子任务列表部分
+                  let updatedBody;
+                  if (parentBody.includes('## 📝 子任务列表') || parentBody.includes('## 子任务列表')) {
+                    // 在现有子任务列表中添加新项
+                    const lines = parentBody.split('\n');
+                    let insertIndex = -1;
+                    let foundSection = false;
+                    
+                    for (let i = 0; i < lines.length; i++) {
+                      if (lines[i].includes('## 📝 子任务列表') || lines[i].includes('## 子任务列表')) {
+                        foundSection = true;
+                        insertIndex = i + 1;
+                        // 跳过空行和现有的子任务
+                        while (insertIndex < lines.length && (lines[insertIndex].trim() === '' || lines[insertIndex].trim().startsWith('- [ ]') || lines[insertIndex].trim().startsWith('- [x]'))) {
+                          insertIndex++;
+                        }
+                        break;
+                      }
+                    }
+                    
+                    if (foundSection && insertIndex > 0) {
+                      lines.splice(insertIndex, 0, subtaskEntry);
+                      updatedBody = lines.join('\n');
+                    } else {
+                      updatedBody = parentBody + '\n\n## 📝 子任务列表\n\n' + subtaskEntry;
+                    }
+                  } else {
+                    // 添加新的子任务列表部分
+                    updatedBody = parentBody + '\n\n## 📝 子任务列表\n\n' + subtaskEntry;
+                  }
+                  
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: parseInt(parsedData.parent_issue),
+                    body: updatedBody
+                  });
+                  
+                  core.info('成功更新父任务 #' + parsedData.parent_issue);
+                } catch (error) {
+                  core.warning('更新父任务失败：' + error.message);
+                  // 即使更新父任务失败，也继续处理
+                }
+              }
+              
               // 回复成功消息
               const moduleInfo = parsedData.module ? '\n📦 **模块**: ' + parsedData.module : '';
+              const parentInfo = parsedData.parent_issue ? '\n🔗 **父任务**: #' + parsedData.parent_issue : '';
               const successMessage = '✅ **AI 已成功创建 TODO!**\n\n' +
                 '📌 **新 Issue**: #' + newIssue.data.number + '\n' +
                 '📝 **标题**: ' + parsedData.title + '\n' +
                 '⏰ **截止日期**: ' + (parsedData.due_date || '无') + '\n' +
-                '🏷️ **优先级**: ' + (parsedData.priority || 'medium') + moduleInfo + '\n\n' +
+                '🏷️ **优先级**: ' + (parsedData.priority || 'medium') + moduleInfo + parentInfo + '\n\n' +
                 '[查看详情 →](' + newIssue.data.html_url + ')\n\n' +
                 '---\n\n' +
                 '💡 提示：AI 自动解析可能不完全准确，请查看并补充完善信息。';
