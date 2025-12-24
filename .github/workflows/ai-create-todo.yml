@@ -247,7 +247,7 @@ jobs:
             
             // 添加父任务标记（如果指定了父任务）
             const parentIssueSection = parsedData.parent_issue 
-              ? '\n## 🔗 父任务\n\n**Parent Issue**: #' + parsedData.parent_issue + '\n'
+              ? '\n\n## 🔗 父任务\n\n**Parent Issue**: #' + parsedData.parent_issue
               : '';
             
             let issueBody = '';
@@ -261,7 +261,7 @@ jobs:
                 ? parsedData.task_checklist.map(t => '- [ ] ' + t).join('\n')
                 : '- [ ] 待补充';
               
-              issueBody = '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n' +
+              issueBody = '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n\n' +
                 '## ⏰ 时间要求\n\n' +
                 '**截止日期**: ' + (parsedData.due_date || '待定') + ' ⏰\n' +
                 '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
@@ -279,7 +279,7 @@ jobs:
                 ? parsedData.task_checklist.map((t, i) => (i + 1) + '. ' + t).join('\n')
                 : '待补充';
               
-              issueBody = '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n' +
+              issueBody = '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n\n' +
                 '## 🎯 完成条件\n\n' +
                 '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
                 '**验收标准**: \n' + acceptanceCriteria + '\n\n' +

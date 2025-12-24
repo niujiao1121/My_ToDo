@@ -349,7 +349,7 @@ class TodoVisualizer:
                         days_left = (due - today).days
                         if days_left >= 0 and days_left <= 7:
                             upcoming_deadlines.append((issue, due_date, days_left))
-                    except:
+                    except (ValueError, AttributeError):
                         pass
         
         print(f"\n总任务数: {total}")
@@ -432,7 +432,7 @@ def main():
                 print("错误：无法从 git remote URL 解析仓库信息")
                 print("请使用 --owner 和 --repo 参数指定")
                 sys.exit(1)
-        except:
+        except (subprocess.CalledProcessError, FileNotFoundError, AttributeError):
             print("错误：请提供 --owner 和 --repo 参数")
             sys.exit(1)
     
