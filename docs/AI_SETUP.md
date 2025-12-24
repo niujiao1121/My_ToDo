@@ -30,7 +30,7 @@
 2. 选择 "API-KEY 管理" 或直接访问 https://dashscope.console.aliyun.com/apiKey
 3. 点击 "创建新的 API-KEY"
 4. 给 Key 起个名字（如 "My_ToDo_AI"）
-5. **重要**：立即复制生成的 API Key（格式类似 `sk-xxxxxxxxxxxxxxxx`）
+5. **重要**：立即复制生成的 API Key
 6. 将 API Key 保存在安全的地方（关闭后仍可查看，但建议立即保存）
 
 ### 1.4 激活通义千问模型
@@ -82,9 +82,12 @@
 
 如需使用其他模型，修改 `.github/workflows/ai-create-todo.yml` 文件中的 `model` 参数：
 
-```yaml
-# 在 postData 的 JSON.stringify 中，将 'qwen-plus' 改为 'qwen-turbo' 或 'qwen-max'
-model: 'qwen-plus',
+```javascript
+// 在 JSON.stringify 调用中找到以下内容：
+const postData = JSON.stringify({
+  model: 'qwen-plus',  // 改为 'qwen-turbo' 或 'qwen-max'
+  ...
+});
 ```
 
 ## ⚙️ 步骤 3：配置 GitHub Secrets
@@ -109,7 +112,7 @@ model: 'qwen-plus',
 仓库 → Settings → Secrets and variables → Actions → New repository secret
 
 Name: DASHSCOPE_API_KEY
-Secret: sk-xxxxxxxxxxxxxxxx...
+Secret: (粘贴你的阿里云 API Key)
 ```
 
 ## 🔐 步骤 4：配置工作流权限
