@@ -282,10 +282,13 @@ AI 输入 3：
 使用可视化脚本查看所有 TODO 的树状结构、优先级、截止日期等信息：
 
 ```bash
-# 设置 GitHub Token
+# 设置 GitHub Token（首次使用）
 export GITHUB_TOKEN=your_token_here
 
-# 运行可视化脚本
+# 运行可视化脚本（推荐使用便捷脚本）
+./scripts/visualize.sh
+
+# 或直接运行 Python 脚本
 python scripts/visualize_todos.py
 ```
 
@@ -347,6 +350,8 @@ python scripts/visualize_todos.py
 
 - **⭐ [AI 配置指南](./docs/AI_SETUP.md)** - OpenAI API 配置、故障排除、成本控制
 - **⭐ [AI 创建示例](./examples/ai-todo-examples.md)** - 10+ 个真实场景的输入输出示例
+- **⭐ [AI 父任务关联示例](./examples/ai-parent-task-examples.md)** - 如何使用 AI 创建带父子关系的 TODO
+- **⭐ [可视化脚本使用](./scripts/README.md)** - 查看 TODO 树状结构的可视化工具
 - [TODO结构说明](./docs/TODO_STRUCTURE.md) - 详细的树状结构说明和最佳实践
 - [工作流程指南](./docs/WORKFLOW.md) - 详细的工作流程和使用技巧
 - [Issue模板使用](./docs/TEMPLATES.md) - Issue模板的使用说明
@@ -356,6 +361,7 @@ python scripts/visualize_todos.py
 1. **优先使用 AI 快速创建**
    - 简单和中等复杂度的任务用 AI 创建
    - 输入时尽量包含日期、优先级、模块信息
+   - **创建子任务时指定父任务编号**（如："属于 #123"）
    - AI 创建后及时检查和完善信息
    - 复杂任务或需要大量技术细节的用标准模板
 

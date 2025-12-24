@@ -23,6 +23,23 @@ pip install requests
 
 ### 使用方法
 
+#### 快速启动（推荐）
+
+使用便捷脚本（会自动检查环境）：
+
+```bash
+# 设置环境变量
+export GITHUB_TOKEN=your_token_here
+
+# 运行（自动检测仓库）
+./scripts/visualize.sh
+
+# 或指定仓库
+./scripts/visualize.sh --owner niujiao1121 --repo My_ToDo
+```
+
+#### 直接运行 Python 脚本
+
 #### 1. 获取 GitHub Token
 
 首先需要创建一个 GitHub Personal Access Token：
