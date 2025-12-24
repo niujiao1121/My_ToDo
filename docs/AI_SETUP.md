@@ -80,13 +80,19 @@
 
 ### 如何更改模型
 
-如需使用其他模型，修改 `.github/workflows/ai-create-todo.yml` 文件中的 `model` 参数：
+如需使用其他模型，修改 `.github/workflows/ai-create-todo.yml` 文件中的模型参数：
+
+在工作流文件中找到以下 JavaScript 代码片段：
 
 ```javascript
-// 在 JSON.stringify 调用中找到以下内容：
 const postData = JSON.stringify({
-  model: 'qwen-plus',  // 改为 'qwen-turbo' 或 'qwen-max'
-  ...
+  model: 'qwen-plus',  // 将这里改为 'qwen-turbo' 或 'qwen-max'
+  messages: [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt }
+  ],
+  temperature: 0.3,
+  response_format: { type: 'json_object' }
 });
 ```
 
