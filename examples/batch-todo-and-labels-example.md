@@ -179,9 +179,9 @@ is:open label:sprint-1 label:priority:high
 查看 Sprint 1 中所有未完成的高优先级任务
 
 ```
-is:open label:sprint-1 label:priority:high
+is:open label:v2.0 label:status:in-progress
 ```
-查看 Sprint 1 中所有高优先级任务
+查看 2.0 版本中所有进行中的任务
 
 ```
 is:closed label:sprint-1

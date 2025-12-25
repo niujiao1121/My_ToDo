@@ -42,7 +42,9 @@ jobs:
             
             // 防止重复 - 检查父任务的子任务列表中是否已包含此issue
             // 使用更精确的模式匹配，避免误判
-            const subtaskPattern = new RegExp(`^\\s*-\\s*\\[[ x]\\]\\s*#${issueNumber}\\b`, 'm');
+            // issueNumber 是整数，但为了安全起见，转换为字符串并转义
+            const escapedIssueNum = String(issueNumber).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const subtaskPattern = new RegExp(`^\\s*-\\s*\\[[ x]\\]\\s*#${escapedIssueNum}\\b`, 'm');
             if (subtaskPattern.test(body)) {
               console.log(`Issue #${issueNumber} already exists in parent issue #${parentNumber}'s subtask list, skipping to avoid duplication.`);
               return;
