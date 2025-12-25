@@ -94,6 +94,15 @@
 ```
 **注意**：使用 `/todo` 命令创建的任务会**自动关联为当前 Issue 的子任务**，无需手动指定父任务！
 
+**批量创建 TODO（新功能）**：✨
+现在支持在一个评论中使用多个 `/todo` 命令批量创建多个 TODO：
+```
+/todo 完成前端页面设计，下周三完成
+/todo 实现后端API接口，预计2天
+/todo 编写测试用例和文档
+```
+系统会自动识别并为每个 `/todo` 创建独立的 Issue，所有 TODO 都会自动关联为当前 Issue 的子任务。
+
 ---
 
 #### 方式二：📋 使用标准模板创建
@@ -145,10 +154,36 @@
 
 ### 创建新项目
 
-1. **创建Project**
+1. **创建Project Issue**
+   - 使用 "项目/大型任务" 模板创建 Issue
+   - 填写项目名称、目标、时间规划等信息
+   - **新功能** ✨：在 **项目标签** 字段中指定自定义标签（用逗号分隔）
+     - 例如：`sprint-1, team-frontend, Q1-2024`
+     - 这些标签会**自动应用到该项目的所有子任务**，便于后续筛选和管理
+   - 添加 `project` 标签和优先级标签
+
+2. **创建GitHub Project看板**（可选）
    - 进入Repository → Projects → New Project
    - 选择模板或创建空白项目
    - 设置项目名称和描述
+
+2. **创建GitHub Project看板**（可选）
+   - 进入Repository → Projects → New Project
+   - 选择模板或创建空白项目
+   - 设置项目名称和描述
+
+3. **创建Milestone**（可选，用于有DDL的项目）
+   - 进入Issues → Milestones → New Milestone
+   - 设置截止日期和描述
+
+**项目标签使用示例**：
+当你创建一个项目 Issue（如 #10）时，在项目标签字段填入：
+```
+sprint-1, frontend-team
+```
+然后使用 `/todo` 命令为该项目创建子任务时，子任务会自动继承 `sprint-1` 和 `frontend-team` 标签。这样你就可以：
+- 通过标签 `sprint-1` 查看该冲刺的所有任务
+- 通过标签 `frontend-team` 查看前端团队的所有任务
 
 2. **创建Milestone（可选，用于有DDL的项目）**
    - 进入Issues → Milestones → New Milestone
@@ -361,6 +396,7 @@ python scripts/visualize_todos.py
    - 简单和中等复杂度的任务用 AI 创建
    - 输入时尽量包含日期、优先级、模块信息
    - **创建子任务时指定父任务编号**（如："属于 #123"）
+   - **使用批量创建功能**：一条评论中使用多个 `/todo` 命令快速分解任务
    - AI 创建后及时检查和完善信息
    - 复杂任务或需要大量技术细节的用标准模板
 
@@ -372,13 +408,24 @@ python scripts/visualize_todos.py
    - 每个Issue至少有一个类型标签和一个模块标签
    - 根据实际情况添加优先级和状态标签
    - AI 会自动添加标签，但可以手动调整
+   - **使用项目标签功能**：为项目定义自定义标签，子任务自动继承
 
-4. **及时更新状态**
+4. **利用项目标签进行分类管理**
+   - 为不同的冲刺、团队、版本创建项目标签
+   - 子任务自动继承项目标签，便于筛选和跟踪
+   - 使用标签组合筛选，快速定位特定任务
+
+4. **利用项目标签进行分类管理**
+   - 为不同的冲刺、团队、版本创建项目标签
+   - 子任务自动继承项目标签，便于筛选和跟踪
+   - 使用标签组合筛选，快速定位特定任务
+
+5. **及时更新状态**
    - 任务开始时添加 `status:in-progress`
    - 遇到阻塞及时标记并说明
    - 完成后及时关闭Issue
 
-5. **利用GitHub功能**
+6. **利用GitHub功能**
    - 使用Project看板可视化进度
    - 使用Milestone管理阶段性目标
    - 使用Discussions讨论长期规划
@@ -395,6 +442,7 @@ python scripts/visualize_todos.py
 参考 `examples/` 目录下的示例项目，了解如何组织复杂的多项目TODO结构：
 - [电商项目示例](./examples/ecommerce-project.md)
 - **⭐ [AI TODO 创建示例](./examples/ai-todo-examples.md)** - 推荐先看这个！
+- **✨ [批量创建 TODO 和项目标签使用示例](./examples/batch-todo-and-labels-example.md)** - 新功能详细教程！
 
 ---
 
