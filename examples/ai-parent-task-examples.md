@@ -84,7 +84,7 @@ AI 支持多种表达方式来指定父任务：
 **AI 生成的 TODO 会包含**：
 - 标题：`[TASK] 实现用户注册 API`
 - 父任务标记：`**Parent Issue**: #100`
-- 标签：`task-with-deadline`, `priority:medium`, `module:backend`, `subtask`
+- 标签：`task-with-deadline`, `priority:medium`, `subtask`
 
 **父任务 #100 会自动更新**：
 ```markdown

@@ -104,7 +104,6 @@ sprint-1, auth-module, v2.0
    - `subtask`（自动添加）
    - `task-with-deadline` 或 `task-open`（根据是否有截止日期）
    - `priority:medium`（AI 推断或默认）
-   - `module:backend`（AI 推断）
    - `sprint-1`（从项目继承）
    - `auth-module`（从项目继承）
    - `v2.0`（从项目继承）
@@ -117,7 +116,7 @@ sprint-1, auth-module, v2.0
 - 查看 `sprint-1` 标签：显示第一个冲刺的所有任务
 - 查看 `auth-module` 标签：显示认证模块的所有任务
 - 查看 `v2.0` 标签：显示 2.0 版本的所有任务
-- 组合筛选：`sprint-1` + `module:backend`：显示第一个冲刺的后端任务
+- 组合筛选：`sprint-1` + `priority:high`：显示第一个冲刺的高优先级任务
 
 ### 标签命名建议
 
@@ -133,7 +132,7 @@ sprint-1, auth-module, v2.0
    - 客户：`client-abc`, `client-xyz`
 
 3. **避免与系统标签冲突**
-   - 系统标签包括：`project`, `task-with-deadline`, `priority:*`, `module:*`, `status:*`, `type:*` 等
+   - 系统标签包括：`project`, `task-with-deadline`, `priority:*`, `status:*`, `type:*` 等
    - 自定义标签应该使用不同的命名模式
 
 ### 完整示例：敏捷开发项目
@@ -167,7 +166,7 @@ sprint-1, ecommerce, q1-2024, team-alpha
 
 - 创建了 4 个子任务
 - 每个子任务都自动带上 `sprint-1`, `ecommerce`, `q1-2024`, `team-alpha` 标签
-- 每个子任务根据描述还会有各自的模块标签（`module:backend`, `module:frontend`, `module:docs`）
+- 每个子任务根据 AI 分析会有各自的优先级和任务类型标签
 - 可以通过标签轻松查看项目进度和分类
 
 ### 高级用法：标签组合筛选
@@ -175,9 +174,9 @@ sprint-1, ecommerce, q1-2024, team-alpha
 在 GitHub Issues 页面，你可以组合多个标签进行筛选：
 
 ```
-is:open label:sprint-1 label:module:backend
+is:open label:sprint-1 label:priority:high
 ```
-查看 Sprint 1 中所有未完成的后端任务
+查看 Sprint 1 中所有未完成的高优先级任务
 
 ```
 is:open label:sprint-1 label:priority:high

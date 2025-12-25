@@ -137,9 +137,9 @@
 2. 自己编写标题和内容
 3. 手动选择标签：
    - 任务类型：`project`, `task-with-deadline`, `task-open`, `subtask`
-   - 模块：`module:frontend`, `module:backend`, `module:database` 等
    - 优先级：`priority:critical`, `priority:high`, `priority:medium`, `priority:low`
    - 状态：`status:planning`, `status:in-progress`, `status:blocked` 等
+   - 类型：`type:feature`, `type:bug`, `type:documentation` 等
 4. 建立任务关系（如果需要）：
    - 在描述中使用 `Parent: #issue_number` 标记父任务
    - 使用 `- [ ] #issue_number` 创建子任务清单
@@ -348,12 +348,12 @@ python scripts/visualize_todos.py
 
 ```
 项目: 网站重构 (#1) [project, priority:high]
-├── 前端改造 (#2) [task-with-deadline, module:frontend]
+├── 前端改造 (#2) [task-with-deadline]
 │   ├── 设计新UI (#3) [subtask]
 │   ├── 实现响应式布局 (#4) [subtask]
 │   └── 集成新组件库 (#5) [subtask]
-├── 后端优化 (#6) [task-open, module:backend]
-│   ├── 数据库重构 (#7) [subtask, module:database]
+├── 后端优化 (#6) [task-open]
+│   ├── 数据库重构 (#7) [subtask]
 │   └── API性能优化 (#8) [subtask]
 └── 测试与部署 (#9) [task-with-deadline]
     ├── 编写单元测试 (#10) [subtask]
