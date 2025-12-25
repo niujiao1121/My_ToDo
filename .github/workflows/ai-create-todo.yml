@@ -432,6 +432,9 @@ jobs:
                   
                   if (isProject) {
                     // 提取父任务中的自定义标签（不是系统预定义的标签）
+                    // Note: This system labels list is maintained in .github/tags-config.json
+                    // It's hardcoded here for performance (no file read needed at runtime)
+                    // When updating tags, update both tags-config.json AND this list
                     const systemLabels = [
                       'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox',
                       'priority:critical', 'priority:high', 'priority:medium', 'priority:low',

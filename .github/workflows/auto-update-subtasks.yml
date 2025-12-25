@@ -37,6 +37,9 @@ jobs:
             // Inherit project tags from parent task
             try {
               // Load system labels from tags config
+              // Note: This list is maintained in .github/tags-config.json
+              // It's hardcoded here for performance (no file read needed at runtime)
+              // When updating tags, update both tags-config.json AND this list
               const systemLabels = [
                 'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox',
                 'priority:critical', 'priority:high', 'priority:medium', 'priority:low',

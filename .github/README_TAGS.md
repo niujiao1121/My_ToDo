@@ -21,7 +21,12 @@ This is the central configuration file that defines all tags used in the project
 
 ### For Workflows
 
-Workflows should reference the `systemLabels` array in `tags-config.json` to determine which labels are system-defined vs. custom project labels.
+Workflows reference a hardcoded `systemLabels` array to distinguish between system-defined and custom project labels. This array is duplicated in multiple workflow files for performance reasons (to avoid runtime file reads).
+
+**Important**: When updating the system labels list, you must update it in:
+1. `.github/tags-config.json` (the source of truth)
+2. `.github/workflows/auto-update-subtasks.yml` (line ~46)
+3. `.github/workflows/ai-create-todo.yml` (line ~439)
 
 Example:
 ```javascript
