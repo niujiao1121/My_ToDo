@@ -18,8 +18,7 @@
 1. 点击 "New Issue"
 2. 选择 "项目/大型任务" 模板
 3. 填写项目概述、时间规划、关键里程碑
-4. 添加 `project` 标签
-5. 根据需要添加模块标签
+4. 添加 `project` 标签和适当的优先级标签
 
 **示例**:
 ```markdown
@@ -50,7 +49,7 @@ Milestone: 2024 Q1
 **示例**:
 ```markdown
 标题: [TASK] 实现用户认证API
-标签: task-with-deadline, module:backend, priority:high
+标签: task-with-deadline, priority:high
 截止日期: 2024-02-15
 Milestone: MVP版本
 ```
@@ -85,7 +84,7 @@ Milestone: MVP版本
 **示例**:
 ```markdown
 标题: [OPEN] 优化数据库查询性能
-标签: task-open, module:database, priority:medium
+标签: task-open, priority:medium
 重要性: 高
 紧急性: 低
 建议时机: 下次版本发布后，有空闲时间时处理
@@ -119,7 +118,7 @@ Milestone: MVP版本
 **示例**:
 ```markdown
 标题: [SUBTASK] 实现JWT token生成
-标签: subtask, module:backend
+标签: subtask
 Parent Issue: #123 (用户认证系统)
 ```
 
@@ -217,26 +216,25 @@ gh issue list --label task-open --sort updated
 
 每个Issue至少应该有：
 1. **类型标签**: `project` / `task-with-deadline` / `task-open` / `subtask`
-2. **模块标签**: `module:*`
+2. **优先级标签**: `priority:*`（建议添加）
 
 ### 可选标签
 
 根据需要添加：
-- **优先级**: `priority:*`
 - **状态**: `status:*`
 - **类型**: `type:*`
 
 ### 标签组合示例
 
 ```
-# 紧急的后端任务
-task-with-deadline, module:backend, priority:critical, status:in-progress
+# 紧急任务
+task-with-deadline, priority:critical, status:in-progress
 
 # 开放性的文档改进
-task-open, module:docs, priority:low, type:documentation
+task-open, priority:low, type:documentation
 
-# 阻塞的前端子任务
-subtask, module:frontend, status:blocked, priority:high
+# 阻塞的子任务
+subtask, status:blocked, priority:high
 ```
 
 ## 📊 模板效果跟踪
@@ -265,8 +263,8 @@ gh issue list --label subtask --state all
 在模板中使用占位符：
 ```markdown
 **负责人**: @{{ assignee }}
-**模块**: {{ module }}
 **优先级**: {{ priority }}
+**截止日期**: {{ due_date }}
 ```
 
 使用时替换为实际值。
@@ -275,8 +273,8 @@ gh issue list --label subtask --state all
 
 创建常用配置的模板片段：
 ```markdown
-<!-- 高优先级后端任务 -->
-标签: task-with-deadline, module:backend, priority:high
+<!-- 高优先级任务 -->
+标签: task-with-deadline, priority:high
 分配给: @myself
 ```
 
@@ -286,7 +284,7 @@ gh issue list --label subtask --state all
 # 使用CLI和模板
 gh issue create --template task-with-deadline.md \
   --title "[TASK] 实现支付接口" \
-  --label "task-with-deadline,module:backend,priority:high" \
+  --label "task-with-deadline,priority:high" \
   --milestone "MVP版本"
 ```
 
