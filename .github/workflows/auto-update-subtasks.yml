@@ -40,9 +40,11 @@ jobs:
             });
             let body = parent.data.body;
             
-            // 防止重复 - 检查父任务body中是否已包含此issue编号
-            if (body.includes(`#${issueNumber}`)) {
-              console.log(`Issue #${issueNumber} already exists in parent issue #${parentNumber}, skipping to avoid duplication.`);
+            // 防止重复 - 检查父任务的子任务列表中是否已包含此issue
+            // 使用更精确的模式匹配，避免误判
+            const subtaskPattern = new RegExp(`^\\s*-\\s*\\[[ x]\\]\\s*#${issueNumber}\\b`, 'm');
+            if (subtaskPattern.test(body)) {
+              console.log(`Issue #${issueNumber} already exists in parent issue #${parentNumber}'s subtask list, skipping to avoid duplication.`);
               return;
             }
             

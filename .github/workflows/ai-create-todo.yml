@@ -336,6 +336,7 @@ jobs:
             const labels = [taskType, 'priority:' + (parsedData.priority || 'medium'), 'ai-generated'];
             // 只有从评论创建的子任务才添加 subtask 标签
             // 从 issue 创建时，即使有父任务也不添加，因为原 issue 会被删除
+            // context.eventName 来自workflow触发事件：'issues' 或 'issue_comment'
             if (parsedData.parent_issue && context.eventName === 'issue_comment') {
               labels.push('subtask');
             }
