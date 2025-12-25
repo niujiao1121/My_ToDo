@@ -25,33 +25,8 @@
   description: "AI待处理的TODO输入"
   color: "EDEDED"
 
-# 模块标签
-- name: "module:frontend"
-  description: "前端相关"
-  color: "006B75"
-
-- name: "module:backend"
-  description: "后端相关"
-  color: "1D76DB"
-
-- name: "module:database"
-  description: "数据库相关"
-  color: "0052CC"
-
-- name: "module:devops"
-  description: "运维相关"
-  color: "5843AD"
-
-- name: "module:design"
-  description: "设计相关"
-  color: "F9D0C4"
-
-- name: "module:docs"
-  description: "文档相关"
-  color: "D4C5F9"
-
-- name: "module:testing"
-  description: "测试相关"
+- name: "ai-generated"
+  description: "AI自动生成的任务"
   color: "BFD4F2"
 
 # 优先级标签

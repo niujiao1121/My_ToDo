@@ -33,11 +33,19 @@ jobs:
               console.log("No parent issue referenced in body, skipping.");
               return;
             }
+            
             // 获取父issuebody
             const parent = await github.rest.issues.get({
               owner, repo, issue_number: parentNumber,
             });
             let body = parent.data.body;
+            
+            // 防止重复 - 检查父任务body中是否已包含此issue编号
+            if (body.includes(`#${issueNumber}`)) {
+              console.log(`Issue #${issueNumber} already exists in parent issue #${parentNumber}, skipping to avoid duplication.`);
+              return;
+            }
+            
             const lines = body.split('\n');
             // 找到"## 📝 子任务列表"，插入
             let found = false;
@@ -46,10 +54,8 @@ jobs:
                 let insertIdx = i+1;
                 // 跳过注释行
                 while (insertIdx < lines.length && lines[insertIdx].trim().startsWith('<')) insertIdx++;
-                // 防止重复
-                if (!body.includes(`#${issueNumber}`)) {
-                  lines.splice(insertIdx, 0, `- [ ] #${issueNumber} - ${issueTitle}`);
-                }
+                // 添加子任务项
+                lines.splice(insertIdx, 0, `- [ ] #${issueNumber} - ${issueTitle}`);
                 found = true;
                 break;
               }

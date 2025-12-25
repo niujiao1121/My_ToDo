@@ -150,7 +150,6 @@ jobs:
               '  "parent_issue": "父任务编号，如果用户提到 #数字、parent #数字、属于#数字、从属于#数字、子任务、subtask of 等，提取数字，否则为 null",\n' +
               '  "due_date": "截止日期 YYYY-MM-DD 格式，如果用户提到了日期相关的词（今天、明天、下周等）则计算具体日期，否则为 null",\n' +
               '  "priority": "优先级: critical/high/medium/low，根据用户用词判断（紧急、重要等），默认 medium",\n' +
-              '  "module": "模块类型: frontend/backend/database/devops/design/docs/testing，根据任务内容推断，可以为 null",\n' +
               '  "estimated_hours": "预计工作量（小时数），如果用户提到了工作量则提取，否则根据任务复杂度估算，格式如 \'8\' 或 \'16-24\'",\n' +
               '  "acceptance_criteria": ["验收标准1", "验收标准2"],\n' +
               '  "task_checklist": ["步骤1", "步骤2"],\n' +
@@ -178,14 +177,6 @@ jobs:
               '- 包含"一般"、"normal"、"medium" -> medium\n' +
               '- 包含"不急"、"low"、"可选" -> low\n' +
               '- 默认 -> medium\n\n' +
-              '模块推断：\n' +
-              '- 包含"前端"、"UI"、"页面"、"React"、"Vue" -> frontend\n' +
-              '- 包含"后端"、"API"、"服务器"、"数据库" -> backend\n' +
-              '- 包含"数据库"、"SQL"、"MongoDB" -> database\n' +
-              '- 包含"部署"、"CI/CD"、"Docker" -> devops\n' +
-              '- 包含"设计"、"UI设计"、"原型" -> design\n' +
-              '- 包含"文档"、"说明" -> docs\n' +
-              '- 包含"测试" -> testing\n\n' +
               '只返回 JSON，不要有任何其他文字。';
 
             // 循环处理每个 TODO 输入
@@ -343,11 +334,9 @@ jobs:
             
             // 确定标签
             const labels = [taskType, 'priority:' + (parsedData.priority || 'medium'), 'ai-generated'];
-            if (parsedData.module) {
-              labels.push('module:' + parsedData.module);
-            }
-            // 如果有父任务，添加 subtask 标签
-            if (parsedData.parent_issue) {
+            // 只有从评论创建的子任务才添加 subtask 标签
+            // 从 issue 创建时，即使有父任务也不添加，因为原 issue 会被删除
+            if (parsedData.parent_issue && context.eventName === 'issue_comment') {
               labels.push('subtask');
             }
             
@@ -445,7 +434,6 @@ jobs:
                     const systemLabels = [
                       'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox', 'ai-generated',
                       'priority:critical', 'priority:high', 'priority:medium', 'priority:low',
-                      'module:frontend', 'module:backend', 'module:database', 'module:devops', 'module:design', 'module:docs', 'module:testing',
                       'status:planning', 'status:in-progress', 'status:blocked', 'status:review', 'status:testing',
                       'type:feature', 'type:enhancement', 'type:bug', 'type:refactoring', 'type:documentation', 'type:research',
                       'help-wanted', 'good-first-issue', 'duplicate', 'wontfix', 'archived'
@@ -533,7 +521,6 @@ jobs:
                 url: newIssue.data.html_url,
                 priority: parsedData.priority || 'medium',
                 dueDate: parsedData.due_date || '无',
-                module: parsedData.module,
                 parent: parsedData.parent_issue
               });
               
@@ -565,9 +552,8 @@ jobs:
                 createdIssues.forEach((item) => {
                   if (!item.error) {
                     successIndex++;
-                    const moduleInfo = item.module ? ' `' + item.module + '`' : '';
                     const parentInfo = item.parent ? ' (子任务 #' + item.parent + ')' : '';
-                    summaryMessage += successIndex + '. [#' + item.number + '](' + item.url + ') - ' + item.title + moduleInfo + parentInfo + '\n';
+                    summaryMessage += successIndex + '. [#' + item.number + '](' + item.url + ') - ' + item.title + parentInfo + '\n';
                   }
                 });
               }
@@ -592,14 +578,13 @@ jobs:
               // 单个 TODO 创建的消息
               const item = createdIssues[0];
               if (!item.error) {
-                const moduleInfo = item.module ? '\n📦 **模块**: ' + item.module : '';
                 const parentInfo = item.parent ? '\n🔗 **父任务**: #' + item.parent : '';
                 const milestoneInfo = item.dueDate !== '无' ? '\n🎯 **Milestone**: 已关联到截止日期 Milestone' : '';
                 summaryMessage = '✅ **AI 已成功创建 TODO!**\n\n' +
                   '📌 **新 Issue**: #' + item.number + '\n' +
                   '📝 **标题**: ' + item.title + '\n' +
                   '⏰ **截止日期**: ' + item.dueDate + '\n' +
-                  '🏷️ **优先级**: ' + item.priority + moduleInfo + parentInfo + milestoneInfo + '\n\n' +
+                  '🏷️ **优先级**: ' + item.priority + parentInfo + milestoneInfo + '\n\n' +
                   '[查看详情 →](' + item.url + ')\n\n' +
                   '---\n\n' +
                   '💡 提示：AI 自动解析可能不完全准确，请查看并补充完善信息。';
