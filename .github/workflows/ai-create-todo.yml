@@ -74,6 +74,7 @@ jobs:
               // 清理模板中的注释
               userInput = userInput.replace(/<!--[\s\S]*?-->/g, '').trim();
               // 提取"我要做的事"部分的内容
+              // 正则说明：匹配 ## 我要做的事 后面的内容，直到遇到下一个 ## 或 --- 或文件结尾
               const contentMatch = userInput.match(/##\s*我要做的事\s*\n+([\s\S]+?)(?=\n##|\n---|$)/i);
               if (contentMatch) {
                 userInput = contentMatch[1].trim();
@@ -323,6 +324,8 @@ jobs:
                 const milestoneTitle = parsedData.due_date + ' Deadline';
                 
                 // 查找是否已存在相同日期的 milestone
+                // 注意：只查找前 30 个 open milestones（GitHub API 默认限制）
+                // 对于大多数仓库来说这已经足够
                 const { data: existingMilestones } = await github.rest.issues.listMilestones({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
