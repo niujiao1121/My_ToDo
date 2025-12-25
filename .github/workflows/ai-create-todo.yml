@@ -66,14 +66,25 @@ jobs:
             // 获取用户输入
             let userInput = '';
             let sourceIssueNumber = null;
+            let autoParentIssue = null; // 自动检测的父任务
             
             if (context.eventName === 'issues') {
               userInput = context.payload.issue.body || '';
               sourceIssueNumber = context.payload.issue.number;
+              // 清理模板中的注释
+              userInput = userInput.replace(/<!--[\s\S]*?-->/g, '').trim();
+              // 提取"我要做的事"部分的内容
+              // 正则说明：匹配 ## 我要做的事 后面的内容，直到遇到下一个 ## 或 --- 或文件结尾
+              const contentMatch = userInput.match(/##\s*我要做的事\s*\n+([\s\S]+?)(?=\n##|\n---|$)/i);
+              if (contentMatch) {
+                userInput = contentMatch[1].trim();
+              }
             } else if (context.eventName === 'issue_comment') {
               const comment = context.payload.comment.body;
               userInput = comment.replace(/^\/todo\s+/, '').trim();
               sourceIssueNumber = context.payload.issue.number;
+              // 当从评论创建时，自动设置父任务为被评论的issue
+              autoParentIssue = sourceIssueNumber;
             }
             
             if (!userInput) {
@@ -230,6 +241,12 @@ jobs:
               const content = aiResponse.choices[0].message.content;
               parsedData = JSON.parse(content);
               core.info('解析后的数据：' + JSON.stringify(parsedData));
+              
+              // 如果从评论创建且AI没有识别出父任务，使用自动检测的父任务
+              if (autoParentIssue && !parsedData.parent_issue) {
+                parsedData.parent_issue = autoParentIssue.toString();
+                core.info('自动设置父任务为: ' + autoParentIssue);
+              }
             } catch (error) {
               core.error('解析 AI 响应失败：' + error.message);
               await github.rest.issues.createComment({
@@ -299,16 +316,62 @@ jobs:
               labels.push('subtask');
             }
             
+            // 如果有截止日期，创建或查找对应的 Milestone
+            let milestoneNumber = null;
+            if (parsedData.due_date && taskType === 'task-with-deadline') {
+              try {
+                // 生成 milestone 标题（格式：YYYY-MM-DD Deadline）
+                const milestoneTitle = parsedData.due_date + ' Deadline';
+                
+                // 查找是否已存在相同日期的 milestone
+                // 注意：只查找前 30 个 open milestones（GitHub API 默认限制）
+                // 对于大多数仓库来说这已经足够
+                const { data: existingMilestones } = await github.rest.issues.listMilestones({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open'
+                });
+                
+                const existingMilestone = existingMilestones.find(m => m.title === milestoneTitle);
+                
+                if (existingMilestone) {
+                  milestoneNumber = existingMilestone.number;
+                  core.info('使用现有 Milestone #' + milestoneNumber + ': ' + milestoneTitle);
+                } else {
+                  // 创建新的 milestone
+                  const { data: newMilestone } = await github.rest.issues.createMilestone({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    title: milestoneTitle,
+                    due_on: parsedData.due_date + 'T23:59:59Z',
+                    description: '截止日期为 ' + parsedData.due_date + ' 的任务集合'
+                  });
+                  milestoneNumber = newMilestone.number;
+                  core.info('创建新 Milestone #' + milestoneNumber + ': ' + milestoneTitle);
+                }
+              } catch (error) {
+                core.warning('创建或查找 Milestone 失败：' + error.message);
+                // Milestone 创建失败不影响 Issue 创建，继续执行
+              }
+            }
+            
             // 创建新 Issue
             try {
-              const newIssue = await github.rest.issues.create({
+              const issueParams = {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: titlePrefix + ' ' + parsedData.title,
                 body: issueBody,
                 labels: labels,
                 assignees: [context.actor]
-              });
+              };
+              
+              // 如果有 milestone，添加到 issue 参数中
+              if (milestoneNumber) {
+                issueParams.milestone = milestoneNumber;
+              }
+              
+              const newIssue = await github.rest.issues.create(issueParams);
               
               // 如果指定了父任务，尝试更新父任务
               if (parsedData.parent_issue) {
@@ -371,11 +434,12 @@ jobs:
               // 回复成功消息
               const moduleInfo = parsedData.module ? '\n📦 **模块**: ' + parsedData.module : '';
               const parentInfo = parsedData.parent_issue ? '\n🔗 **父任务**: #' + parsedData.parent_issue : '';
+              const milestoneInfo = milestoneNumber ? '\n🎯 **Milestone**: 已关联到截止日期 Milestone' : '';
               const successMessage = '✅ **AI 已成功创建 TODO!**\n\n' +
                 '📌 **新 Issue**: #' + newIssue.data.number + '\n' +
                 '📝 **标题**: ' + parsedData.title + '\n' +
                 '⏰ **截止日期**: ' + (parsedData.due_date || '无') + '\n' +
-                '🏷️ **优先级**: ' + (parsedData.priority || 'medium') + moduleInfo + parentInfo + '\n\n' +
+                '🏷️ **优先级**: ' + (parsedData.priority || 'medium') + moduleInfo + parentInfo + milestoneInfo + '\n\n' +
                 '[查看详情 →](' + newIssue.data.html_url + ')\n\n' +
                 '---\n\n' +
                 '💡 提示：AI 自动解析可能不完全准确，请查看并补充完善信息。';
