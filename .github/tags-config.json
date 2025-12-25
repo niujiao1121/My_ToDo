@@ -14,7 +14,7 @@
         "color": "3E4B9E"
       },
       "taskWithDeadline": {
-        "name": "task-with-deadline",
+        "name": "task-with-ddl",
         "description": "Task with deadline",
         "color": "D93F0B"
       },
@@ -36,22 +36,22 @@
     },
     "priorities": {
       "critical": {
-        "name": "priority:critical",
+        "name": "pr:critical",
         "description": "Urgent and important",
         "color": "B60205"
       },
       "high": {
-        "name": "priority:high",
+        "name": "pr:high",
         "description": "High priority",
         "color": "D93F0B"
       },
       "medium": {
-        "name": "priority:medium",
+        "name": "pr:medium",
         "description": "Medium priority",
         "color": "FBCA04"
       },
       "low": {
-        "name": "priority:low",
+        "name": "pr:low",
         "description": "Low priority",
         "color": "0E8A16"
       }
@@ -146,14 +146,14 @@
   "systemLabels": [
     "project",
     "epic",
-    "task-with-deadline",
+    "task-with-ddl",
     "task-open",
     "subtask",
     "ai-todo-inbox",
-    "priority:critical",
-    "priority:high",
-    "priority:medium",
-    "priority:low",
+    "pr:critical",
+    "pr:high",
+    "pr:medium",
+    "pr:low",
     "status:planning",
     "status:in-progress",
     "status:blocked",
