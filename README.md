@@ -333,14 +333,6 @@ python scripts/visualize_todos.py
 - `task-open` - 开放性任务，无固定截止日期
 - `subtask` - 子任务
 
-### 模块分类
-- `module:frontend` - 前端相关
-- `module:backend` - 后端相关
-- `module:database` - 数据库相关
-- `module:devops` - 运维相关
-- `module:design` - 设计相关
-- `module:docs` - 文档相关
-
 ### 优先级
 - `priority:critical` - 紧急且重要
 - `priority:high` - 重要
