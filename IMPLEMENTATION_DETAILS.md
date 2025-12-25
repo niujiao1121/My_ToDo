@@ -121,7 +121,7 @@ const regex = /\*\*项目标签\*\*:\s*(?:<!--[\s\S]*?-->\s*)*([^\n<]+)/;
 ```javascript
 const systemLabels = [
   'project', 'epic', 'task-with-deadline', 'task-open', 'subtask',
-  'ai-todo-inbox', 'ai-generated',
+  'ai-todo-inbox',
   'priority:*', 'module:*', 'status:*', 'type:*',
   // ... etc
 ];

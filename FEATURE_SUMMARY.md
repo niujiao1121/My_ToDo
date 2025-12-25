@@ -77,7 +77,6 @@ sprint-1, team-frontend, Q1-2024
 - `sprint-1` ⭐ (从项目继承)
 - `team-frontend` ⭐ (从项目继承)
 - `Q1-2024` ⭐ (从项目继承)
-- `ai-generated` (自动)
 
 ### 特点
 
