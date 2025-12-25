@@ -148,7 +148,6 @@
 │    - task-with-deadline (from AI)                               │
 │    - priority:medium (from AI)                                 │
 │    - module:backend (from AI)                                  │
-│    - ai-generated (auto)                                        │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
@@ -169,7 +168,6 @@
 │  ✅ task-with-deadline                                          │
 │  ✅ priority:medium                                             │
 │  ✅ module:backend                                              │
-│  ✅ ai-generated                                                │
 │  ✅ sprint-1          ← Inherited from project                 │
 │  ✅ team-backend      ← Inherited from project                 │
 │  ✅ v2.0              ← Inherited from project                 │
@@ -322,8 +320,7 @@ Child Issue (#105)
 │  ├─ subtask
 │  ├─ task-with-deadline
 │  ├─ priority:medium
-│  ├─ module:backend
-│  └─ ai-generated
+│  └─ module:backend
 │
 └─ + Inherited Labels
    ├─ sprint-1 (from body)

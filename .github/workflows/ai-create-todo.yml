@@ -240,7 +240,7 @@ jobs:
                   repo: context.repo.repo,
                   title: '[TODO] ' + userInput.substring(0, 50),
                   body: '## 📋 任务描述\n\n' + userInput + '\n\n---\n\n*此 TODO 由 AI 助手自动创建（AI 解析失败，使用基本格式）*',
-                  labels: ['task-open', 'priority:medium', 'ai-generated'],
+                  labels: ['task-open', 'priority:medium'],
                   assignees: [context.actor]
                 });
                 
@@ -333,7 +333,7 @@ jobs:
             }
             
             // 确定标签
-            const labels = [taskType, 'priority:' + (parsedData.priority || 'medium'), 'ai-generated'];
+            const labels = [taskType, 'priority:' + (parsedData.priority || 'medium')];
             // 只有从评论创建的子任务才添加 subtask 标签
             // 从 issue 创建时，即使有父任务也不添加，因为原 issue 会被删除
             // context.eventName 来自workflow触发事件：'issues' 或 'issue_comment'
@@ -433,7 +433,7 @@ jobs:
                   if (isProject) {
                     // 提取父任务中的自定义标签（不是系统预定义的标签）
                     const systemLabels = [
-                      'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox', 'ai-generated',
+                      'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox',
                       'priority:critical', 'priority:high', 'priority:medium', 'priority:low',
                       'status:planning', 'status:in-progress', 'status:blocked', 'status:review', 'status:testing',
                       'type:feature', 'type:enhancement', 'type:bug', 'type:refactoring', 'type:documentation', 'type:research',

@@ -20,12 +20,6 @@ jobs:
             const repo = context.repo.repo;
             const owner = context.repo.owner;
             
-            // Skip if issue has ai-generated label (already handled by ai-create-todo workflow)
-            if (issueLabels.includes('ai-generated')) {
-              console.log("Issue has ai-generated label, skipping (handled by ai-create-todo workflow).");
-              return;
-            }
-            
             // 匹配"原始输入来自: #数字"或"属于#数字"或"项目#数字"
             const parentMatch = issueBody.match(/原始输入来自[:：]?\s*#(\d+)|属于#?(\d+)/i);
             const parentNumber = parentMatch ? (parentMatch[1] || parentMatch[2]) : null;
@@ -39,6 +33,68 @@ jobs:
               owner, repo, issue_number: parentNumber,
             });
             let body = parent.data.body;
+            
+            // Inherit project tags from parent task
+            try {
+              // Load system labels from tags config
+              const systemLabels = [
+                'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox',
+                'priority:critical', 'priority:high', 'priority:medium', 'priority:low',
+                'status:planning', 'status:in-progress', 'status:blocked', 'status:review', 'status:testing',
+                'type:feature', 'type:enhancement', 'type:bug', 'type:refactoring', 'type:documentation', 'type:research',
+                'help-wanted', 'good-first-issue', 'duplicate', 'wontfix', 'archived'
+              ];
+              
+              // Extract project labels from parent issue body
+              const parentBody = parent.data.body || '';
+              const projectLabelsMatch = parentBody.match(/\*\*项目标签\*\*:\s*(?:<!--[\s\S]*?-->\s*)*([^\n<]+)/);
+              
+              let projectLabels = [];
+              if (projectLabelsMatch && projectLabelsMatch[1]) {
+                const labelText = projectLabelsMatch[1].trim();
+                if (labelText && labelText !== '' && labelText !== '-' && labelText !== 'N/A') {
+                  projectLabels = labelText.split(/[,，\s]+/)
+                    .map(l => l.trim())
+                    .filter(l => l && l !== '' && l !== '-');
+                  console.log('从父任务Body中提取到项目标签: ' + projectLabels.join(', '));
+                }
+              }
+              
+              // Also inherit custom labels from parent if it's a project
+              const parentLabels = parent.data.labels || [];
+              const isProject = parentLabels.some(label => 
+                typeof label === 'string' ? label === 'project' : label.name === 'project'
+              );
+              
+              if (isProject) {
+                parentLabels.forEach(label => {
+                  const labelName = typeof label === 'string' ? label : label.name;
+                  if (!systemLabels.includes(labelName) && !projectLabels.includes(labelName)) {
+                    projectLabels.push(labelName);
+                    console.log('从父任务标签继承: ' + labelName);
+                  }
+                });
+              }
+              
+              // Add project labels to the subtask
+              if (projectLabels.length > 0) {
+                const currentLabels = issueLabels;
+                const labelsToAdd = projectLabels.filter(l => !currentLabels.includes(l));
+                
+                if (labelsToAdd.length > 0) {
+                  await github.rest.issues.addLabels({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    labels: labelsToAdd
+                  });
+                  console.log('成功为子任务添加项目标签: ' + labelsToAdd.join(', '));
+                }
+              }
+            } catch (error) {
+              console.log('继承项目标签时出错：' + error.message);
+              // Continue execution even if tag inheritance fails
+            }
             
             // 防止重复 - 检查父任务的子任务列表中是否已包含此issue
             // 使用更精确的模式匹配，避免误判

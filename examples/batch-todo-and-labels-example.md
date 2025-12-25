@@ -107,7 +107,6 @@ sprint-1, auth-module, v2.0
    - `sprint-1`（从项目继承）
    - `auth-module`（从项目继承）
    - `v2.0`（从项目继承）
-   - `ai-generated`（自动添加）
 
 ### 步骤 3：筛选和管理
 

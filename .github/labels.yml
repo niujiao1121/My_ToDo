@@ -25,10 +25,6 @@
   description: "AI待处理的TODO输入"
   color: "EDEDED"
 
-- name: "ai-generated"
-  description: "AI自动生成的任务"
-  color: "BFD4F2"
-
 # 优先级标签
 - name: "priority:critical"
   description: "紧急且重要"

@@ -1,0 +1,174 @@
+{
+  "description": "Centralized tag configuration file for the My_ToDo project",
+  "version": "1.0.0",
+  "tags": {
+    "taskTypes": {
+      "project": {
+        "name": "project",
+        "description": "Large project or task line",
+        "color": "5319E7"
+      },
+      "epic": {
+        "name": "epic",
+        "description": "Epic feature or task",
+        "color": "3E4B9E"
+      },
+      "taskWithDeadline": {
+        "name": "task-with-deadline",
+        "description": "Task with deadline",
+        "color": "D93F0B"
+      },
+      "taskOpen": {
+        "name": "task-open",
+        "description": "Open task without fixed deadline",
+        "color": "0E8A16"
+      },
+      "subtask": {
+        "name": "subtask",
+        "description": "Subtask",
+        "color": "C5DEF5"
+      },
+      "aiTodoInbox": {
+        "name": "ai-todo-inbox",
+        "description": "AI TODO input queue",
+        "color": "EDEDED"
+      }
+    },
+    "priorities": {
+      "critical": {
+        "name": "priority:critical",
+        "description": "Urgent and important",
+        "color": "B60205"
+      },
+      "high": {
+        "name": "priority:high",
+        "description": "High priority",
+        "color": "D93F0B"
+      },
+      "medium": {
+        "name": "priority:medium",
+        "description": "Medium priority",
+        "color": "FBCA04"
+      },
+      "low": {
+        "name": "priority:low",
+        "description": "Low priority",
+        "color": "0E8A16"
+      }
+    },
+    "statuses": {
+      "planning": {
+        "name": "status:planning",
+        "description": "Planning",
+        "color": "D4C5F9"
+      },
+      "inProgress": {
+        "name": "status:in-progress",
+        "description": "In progress",
+        "color": "0052CC"
+      },
+      "blocked": {
+        "name": "status:blocked",
+        "description": "Blocked",
+        "color": "B60205"
+      },
+      "review": {
+        "name": "status:review",
+        "description": "Under review",
+        "color": "FBCA04"
+      },
+      "testing": {
+        "name": "status:testing",
+        "description": "Testing",
+        "color": "C2E0C6"
+      }
+    },
+    "types": {
+      "feature": {
+        "name": "type:feature",
+        "description": "New feature",
+        "color": "84B6EB"
+      },
+      "enhancement": {
+        "name": "type:enhancement",
+        "description": "Enhancement",
+        "color": "A2EEEF"
+      },
+      "bug": {
+        "name": "type:bug",
+        "description": "Bug fix",
+        "color": "D73A4A"
+      },
+      "refactoring": {
+        "name": "type:refactoring",
+        "description": "Code refactoring",
+        "color": "FEF2C0"
+      },
+      "documentation": {
+        "name": "type:documentation",
+        "description": "Documentation",
+        "color": "0075CA"
+      },
+      "research": {
+        "name": "type:research",
+        "description": "Research",
+        "color": "D876E3"
+      }
+    },
+    "other": {
+      "helpWanted": {
+        "name": "help-wanted",
+        "description": "Help wanted",
+        "color": "008672"
+      },
+      "goodFirstIssue": {
+        "name": "good-first-issue",
+        "description": "Good for newcomers",
+        "color": "7057FF"
+      },
+      "duplicate": {
+        "name": "duplicate",
+        "description": "Duplicate issue",
+        "color": "CFD3D7"
+      },
+      "wontfix": {
+        "name": "wontfix",
+        "description": "Won't fix",
+        "color": "FFFFFF"
+      },
+      "archived": {
+        "name": "archived",
+        "description": "Archived",
+        "color": "E4E669"
+      }
+    }
+  },
+  "systemLabels": [
+    "project",
+    "epic",
+    "task-with-deadline",
+    "task-open",
+    "subtask",
+    "ai-todo-inbox",
+    "priority:critical",
+    "priority:high",
+    "priority:medium",
+    "priority:low",
+    "status:planning",
+    "status:in-progress",
+    "status:blocked",
+    "status:review",
+    "status:testing",
+    "type:feature",
+    "type:enhancement",
+    "type:bug",
+    "type:refactoring",
+    "type:documentation",
+    "type:research",
+    "help-wanted",
+    "good-first-issue",
+    "duplicate",
+    "wontfix",
+    "archived"
+  ]
+}

@@ -32,7 +32,7 @@ This document provides step-by-step instructions for manually testing the two ne
 
 **Validation:**
 - Check that 3 new issues were created
-- Check that each issue has appropriate labels (subtask, module, priority, ai-generated)
+- Check that each issue has appropriate labels (subtask, module, priority)
 - Check that each issue is linked in the parent issue's subtask list
 - Check that each issue body contains a link back to the original issue
 
@@ -111,7 +111,6 @@ This document provides step-by-step instructions for manually testing the two ne
   - `sprint-1` (inherited from project)
   - `team-alpha` (inherited from project)
   - `q1-2024` (inherited from project)
-  - `ai-generated` (automatic)
 
 **Validation:**
 - Check that all three project labels are present on the subtask
