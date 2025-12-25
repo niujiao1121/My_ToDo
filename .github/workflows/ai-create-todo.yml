@@ -64,12 +64,12 @@ jobs:
             const https = require('https');
             
             // 获取用户输入
-            let userInput = '';
+            let userInputs = []; // 改为数组以支持批量创建
             let sourceIssueNumber = null;
             let autoParentIssue = null; // 自动检测的父任务
             
             if (context.eventName === 'issues') {
-              userInput = context.payload.issue.body || '';
+              let userInput = context.payload.issue.body || '';
               sourceIssueNumber = context.payload.issue.number;
               // 清理模板中的注释
               userInput = userInput.replace(/<!--[\s\S]*?-->/g, '').trim();
@@ -79,15 +79,31 @@ jobs:
               if (contentMatch) {
                 userInput = contentMatch[1].trim();
               }
+              userInputs.push(userInput);
             } else if (context.eventName === 'issue_comment') {
               const comment = context.payload.comment.body;
-              userInput = comment.replace(/^\/todo\s+/, '').trim();
               sourceIssueNumber = context.payload.issue.number;
               // 当从评论创建时，自动设置父任务为被评论的issue
               autoParentIssue = sourceIssueNumber;
+              
+              // 检测多个 /todo 命令（支持批量创建）
+              const todoPattern = /^\/todo\s+(.+)$/gm;
+              const matches = [...comment.matchAll(todoPattern)];
+              
+              if (matches.length > 0) {
+                // 找到多个 /todo 命令
+                userInputs = matches.map(match => match[1].trim());
+                core.info('检测到 ' + matches.length + ' 个 /todo 命令');
+              } else {
+                // 兼容旧格式：整个评论以 /todo 开头
+                const singleTodo = comment.replace(/^\/todo\s+/, '').trim();
+                if (singleTodo) {
+                  userInputs.push(singleTodo);
+                }
+              }
             }
             
-            if (!userInput) {
+            if (userInputs.length === 0 || !userInputs[0]) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -108,7 +124,21 @@ jobs:
               return;
             }
             
-            // 构建 AI 提示词
+            // 批量创建 TODO - 为每个输入创建一个 Issue
+            const createdIssues = [];
+            const batchCount = userInputs.length;
+            
+            // 如果是批量创建，先发送提示消息
+            if (batchCount > 1) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                body: '🔄 检测到 ' + batchCount + ' 个 TODO，正在批量创建...'
+              });
+            }
+            
+            // 构建 AI 提示词（在循环外定义，重复使用）
             // Note: 使用字符串拼接而非模板字面量以避免 YAML 解析问题
             const currentDate = new Date().toISOString().split('T')[0];
             const systemPrompt = '你是一个专业的任务管理助手。用户会用中文或英文描述一个任务，你需要将其解析为结构化的 TODO。\n\n' +
@@ -157,6 +187,11 @@ jobs:
               '- 包含"文档"、"说明" -> docs\n' +
               '- 包含"测试" -> testing\n\n' +
               '只返回 JSON，不要有任何其他文字。';
+
+            // 循环处理每个 TODO 输入
+            for (let todoIndex = 0; todoIndex < userInputs.length; todoIndex++) {
+              const userInput = userInputs[todoIndex];
+              core.info('处理第 ' + (todoIndex + 1) + '/' + batchCount + ' 个 TODO: ' + userInput);
 
             const userPrompt = '用户输入：\n' + userInput;
             
@@ -208,31 +243,32 @@ jobs:
               core.error('调用阿里云 API 失败：' + error.message);
               
               // 失败时使用基本信息创建 Issue
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: sourceIssueNumber,
-                body: '❌ AI 解析失败：' + error.message + '\n\n将使用基本信息创建 TODO...'
-              });
+              try {
+                const basicIssue = await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: '[TODO] ' + userInput.substring(0, 50),
+                  body: '## 📋 任务描述\n\n' + userInput + '\n\n---\n\n*此 TODO 由 AI 助手自动创建（AI 解析失败，使用基本格式）*',
+                  labels: ['task-open', 'priority:medium', 'ai-generated'],
+                  assignees: [context.actor]
+                });
+                
+                createdIssues.push({
+                  number: basicIssue.data.number,
+                  title: userInput.substring(0, 50),
+                  url: basicIssue.data.html_url,
+                  error: 'AI 解析失败'
+                });
+              } catch (createError) {
+                core.error('创建基本 Issue 也失败：' + createError.message);
+                createdIssues.push({
+                  error: '创建失败: ' + createError.message,
+                  input: userInput
+                });
+              }
               
-              // 创建简单的 Issue
-              const basicIssue = await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: '[TODO] ' + userInput.substring(0, 50),
-                body: '## 📋 任务描述\n\n' + userInput + '\n\n---\n\n*此 TODO 由 AI 助手自动创建*',
-                labels: ['task-open', 'priority:medium', 'ai-generated'],
-                assignees: [context.actor]
-              });
-              
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: sourceIssueNumber,
-                body: '✅ 已创建基本 TODO: #' + basicIssue.data.number
-              });
-              
-              return;
+              // 继续处理下一个 TODO
+              continue;
             }
             
             // 解析 AI 响应
@@ -249,13 +285,12 @@ jobs:
               }
             } catch (error) {
               core.error('解析 AI 响应失败：' + error.message);
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: sourceIssueNumber,
-                body: '❌ 解析 AI 响应失败，请稍后重试。'
+              createdIssues.push({
+                error: '解析失败: ' + error.message,
+                input: userInput
               });
-              return;
+              // 继续处理下一个 TODO
+              continue;
             }
             
             // 构建 Issue 内容
@@ -373,7 +408,7 @@ jobs:
               
               const newIssue = await github.rest.issues.create(issueParams);
               
-              // 如果指定了父任务，尝试更新父任务
+              // 如果指定了父任务，尝试更新父任务并继承项目标签
               if (parsedData.parent_issue) {
                 try {
                   const parentIssue = await github.rest.issues.get({
@@ -382,8 +417,68 @@ jobs:
                     issue_number: parseInt(parsedData.parent_issue)
                   });
                   
-                  // 在父任务中添加子任务链接
+                  // 提取父任务的项目标签（从 issue body 中提取）
                   const parentBody = parentIssue.data.body || '';
+                  // 匹配 **项目标签**: 后面的内容，跳过所有HTML注释
+                  const projectLabelsMatch = parentBody.match(/\*\*项目标签\*\*:\s*(?:<!--[\s\S]*?-->\s*)*([^\n<]+)/);
+                  
+                  let projectLabels = [];
+                  if (projectLabelsMatch && projectLabelsMatch[1]) {
+                    const labelText = projectLabelsMatch[1].trim();
+                    if (labelText && labelText !== '' && labelText !== '-' && labelText !== 'N/A') {
+                      // 解析标签，支持逗号、空格、中文逗号分隔
+                      projectLabels = labelText.split(/[,，\s]+/)
+                        .map(l => l.trim())
+                        .filter(l => l && l !== '' && l !== '-');
+                      core.info('从父任务提取到项目标签: ' + projectLabels.join(', '));
+                    }
+                  }
+                  
+                  // 如果父任务是 project 类型，也尝试从其标签中提取自定义标签
+                  const parentLabels = parentIssue.data.labels || [];
+                  const isProject = parentLabels.some(label => 
+                    typeof label === 'string' ? label === 'project' : label.name === 'project'
+                  );
+                  
+                  if (isProject) {
+                    // 提取父任务中的自定义标签（不是系统预定义的标签）
+                    const systemLabels = [
+                      'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox', 'ai-generated',
+                      'priority:critical', 'priority:high', 'priority:medium', 'priority:low',
+                      'module:frontend', 'module:backend', 'module:database', 'module:devops', 'module:design', 'module:docs', 'module:testing',
+                      'status:planning', 'status:in-progress', 'status:blocked', 'status:review', 'status:testing',
+                      'type:feature', 'type:enhancement', 'type:bug', 'type:refactoring', 'type:documentation', 'type:research',
+                      'help-wanted', 'good-first-issue', 'duplicate', 'wontfix', 'archived'
+                    ];
+                    
+                    parentLabels.forEach(label => {
+                      const labelName = typeof label === 'string' ? label : label.name;
+                      if (!systemLabels.includes(labelName) && !projectLabels.includes(labelName)) {
+                        projectLabels.push(labelName);
+                        core.info('从父任务标签继承: ' + labelName);
+                      }
+                    });
+                  }
+                  
+                  // 将项目标签添加到新创建的子任务
+                  if (projectLabels.length > 0) {
+                    const currentLabels = newIssue.data.labels.map(l => 
+                      typeof l === 'string' ? l : l.name
+                    );
+                    const labelsToAdd = projectLabels.filter(l => !currentLabels.includes(l));
+                    
+                    if (labelsToAdd.length > 0) {
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: newIssue.data.number,
+                        labels: labelsToAdd
+                      });
+                      core.info('成功为子任务添加项目标签: ' + labelsToAdd.join(', '));
+                    }
+                  }
+                  
+                  // 在父任务中添加子任务链接
                   const subtaskEntry = '- [ ] #' + newIssue.data.number + ' - ' + parsedData.title;
                   
                   // 查找是否已有子任务列表部分
@@ -431,45 +526,104 @@ jobs:
                 }
               }
               
-              // 回复成功消息
-              const moduleInfo = parsedData.module ? '\n📦 **模块**: ' + parsedData.module : '';
-              const parentInfo = parsedData.parent_issue ? '\n🔗 **父任务**: #' + parsedData.parent_issue : '';
-              const milestoneInfo = milestoneNumber ? '\n🎯 **Milestone**: 已关联到截止日期 Milestone' : '';
-              const successMessage = '✅ **AI 已成功创建 TODO!**\n\n' +
-                '📌 **新 Issue**: #' + newIssue.data.number + '\n' +
-                '📝 **标题**: ' + parsedData.title + '\n' +
-                '⏰ **截止日期**: ' + (parsedData.due_date || '无') + '\n' +
-                '🏷️ **优先级**: ' + (parsedData.priority || 'medium') + moduleInfo + parentInfo + milestoneInfo + '\n\n' +
-                '[查看详情 →](' + newIssue.data.html_url + ')\n\n' +
-                '---\n\n' +
-                '💡 提示：AI 自动解析可能不完全准确，请查看并补充完善信息。';
-              
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: sourceIssueNumber,
-                body: successMessage
+              // 记录成功创建的 Issue
+              createdIssues.push({
+                number: newIssue.data.number,
+                title: parsedData.title,
+                url: newIssue.data.html_url,
+                priority: parsedData.priority || 'medium',
+                dueDate: parsedData.due_date || '无',
+                module: parsedData.module,
+                parent: parsedData.parent_issue
               });
-              
-              // 如果是通过 ai-todo-inbox 标签触发的，且不是评论触发，关闭原 Issue
-              if (context.eventName === 'issues' && context.payload.issue.labels.some(label => label.name === 'ai-todo-inbox')) {
-                await github.rest.issues.update({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: sourceIssueNumber,
-                  state: 'closed',
-                  state_reason: 'completed'
-                });
-              }
               
               core.info('成功创建 Issue #' + newIssue.data.number);
               
             } catch (error) {
               core.error('创建 Issue 失败：' + error.message);
-              await github.rest.issues.createComment({
+              createdIssues.push({
+                error: '创建 Issue 失败: ' + error.message,
+                input: userInput
+              });
+            }
+            
+            } // 结束批量创建循环
+            
+            // 批量创建完成后，发送汇总消息
+            let summaryMessage = '';
+            const successCount = createdIssues.filter(i => !i.error).length;
+            const failCount = createdIssues.filter(i => i.error).length;
+            
+            if (batchCount > 1) {
+              // 批量创建的汇总消息
+              summaryMessage = '✅ **批量 TODO 创建完成！**\n\n';
+              summaryMessage += '📊 **统计**: 成功 ' + successCount + ' 个，失败 ' + failCount + ' 个\n\n';
+              
+              if (successCount > 0) {
+                summaryMessage += '### ✅ 成功创建的 TODO\n\n';
+                let successIndex = 0;
+                createdIssues.forEach((item) => {
+                  if (!item.error) {
+                    successIndex++;
+                    const moduleInfo = item.module ? ' `' + item.module + '`' : '';
+                    const parentInfo = item.parent ? ' (子任务 #' + item.parent + ')' : '';
+                    summaryMessage += successIndex + '. [#' + item.number + '](' + item.url + ') - ' + item.title + moduleInfo + parentInfo + '\n';
+                  }
+                });
+              }
+              
+              if (failCount > 0) {
+                summaryMessage += '\n### ❌ 创建失败的 TODO\n\n';
+                let failIndex = 0;
+                createdIssues.forEach((item) => {
+                  if (item.error) {
+                    failIndex++;
+                    summaryMessage += failIndex + '. ' + item.error;
+                    if (item.input) {
+                      summaryMessage += ' - 输入: ' + item.input.substring(0, 50) + '...';
+                    }
+                    summaryMessage += '\n';
+                  }
+                });
+              }
+              
+              summaryMessage += '\n---\n\n💡 提示：AI 自动解析可能不完全准确，请查看并补充完善信息。';
+            } else if (successCount === 1) {
+              // 单个 TODO 创建的消息
+              const item = createdIssues[0];
+              if (!item.error) {
+                const moduleInfo = item.module ? '\n📦 **模块**: ' + item.module : '';
+                const parentInfo = item.parent ? '\n🔗 **父任务**: #' + item.parent : '';
+                const milestoneInfo = item.dueDate !== '无' ? '\n🎯 **Milestone**: 已关联到截止日期 Milestone' : '';
+                summaryMessage = '✅ **AI 已成功创建 TODO!**\n\n' +
+                  '📌 **新 Issue**: #' + item.number + '\n' +
+                  '📝 **标题**: ' + item.title + '\n' +
+                  '⏰ **截止日期**: ' + item.dueDate + '\n' +
+                  '🏷️ **优先级**: ' + item.priority + moduleInfo + parentInfo + milestoneInfo + '\n\n' +
+                  '[查看详情 →](' + item.url + ')\n\n' +
+                  '---\n\n' +
+                  '💡 提示：AI 自动解析可能不完全准确，请查看并补充完善信息。';
+              } else {
+                summaryMessage = '❌ TODO 创建失败: ' + item.error;
+              }
+            } else {
+              summaryMessage = '❌ 所有 TODO 创建均失败，请检查输入或稍后重试。';
+            }
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: sourceIssueNumber,
+              body: summaryMessage
+            });
+            
+            // 如果是通过 ai-todo-inbox 标签触发的，且不是评论触发，关闭原 Issue
+            if (context.eventName === 'issues' && context.payload.issue.labels.some(label => label.name === 'ai-todo-inbox')) {
+              await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: sourceIssueNumber,
-                body: '❌ 创建 Issue 失败：' + error.message
+                state: 'closed',
+                state_reason: 'completed'
               });
             }
