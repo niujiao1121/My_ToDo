@@ -419,16 +419,17 @@ jobs:
                   
                   // 提取父任务的项目标签（从 issue body 中提取）
                   const parentBody = parentIssue.data.body || '';
-                  const projectLabelsMatch = parentBody.match(/\*\*项目标签\*\*:\s*\n?<!--[\s\S]*?-->\n?<!--[\s\S]*?-->\n?<!--[\s\S]*?-->\n?([^\n]+)/);
+                  // 匹配 **项目标签**: 后面的内容，跳过所有HTML注释
+                  const projectLabelsMatch = parentBody.match(/\*\*项目标签\*\*:\s*(?:<!--[\s\S]*?-->\s*)*([^\n<]+)/);
                   
                   let projectLabels = [];
                   if (projectLabelsMatch && projectLabelsMatch[1]) {
                     const labelText = projectLabelsMatch[1].trim();
-                    if (labelText && labelText !== '') {
+                    if (labelText && labelText !== '' && labelText !== '-' && labelText !== 'N/A') {
                       // 解析标签，支持逗号、空格、中文逗号分隔
                       projectLabels = labelText.split(/[,，\s]+/)
                         .map(l => l.trim())
-                        .filter(l => l && l !== '');
+                        .filter(l => l && l !== '' && l !== '-');
                       core.info('从父任务提取到项目标签: ' + projectLabels.join(', '));
                     }
                   }
@@ -560,20 +561,24 @@ jobs:
               
               if (successCount > 0) {
                 summaryMessage += '### ✅ 成功创建的 TODO\n\n';
-                createdIssues.forEach((item, index) => {
+                let successIndex = 0;
+                createdIssues.forEach((item) => {
                   if (!item.error) {
+                    successIndex++;
                     const moduleInfo = item.module ? ' `' + item.module + '`' : '';
                     const parentInfo = item.parent ? ' (子任务 #' + item.parent + ')' : '';
-                    summaryMessage += (index + 1) + '. [#' + item.number + '](' + item.url + ') - ' + item.title + moduleInfo + parentInfo + '\n';
+                    summaryMessage += successIndex + '. [#' + item.number + '](' + item.url + ') - ' + item.title + moduleInfo + parentInfo + '\n';
                   }
                 });
               }
               
               if (failCount > 0) {
                 summaryMessage += '\n### ❌ 创建失败的 TODO\n\n';
-                createdIssues.forEach((item, index) => {
+                let failIndex = 0;
+                createdIssues.forEach((item) => {
                   if (item.error) {
-                    summaryMessage += (index + 1) + '. ' + item.error;
+                    failIndex++;
+                    summaryMessage += failIndex + '. ' + item.error;
                     if (item.input) {
                       summaryMessage += ' - 输入: ' + item.input.substring(0, 50) + '...';
                     }
