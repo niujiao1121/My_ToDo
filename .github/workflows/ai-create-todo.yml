@@ -221,7 +221,7 @@ jobs:
                 repo: context.repo.repo,
                 title: '[TODO] ' + userInput.substring(0, 50),
                 body: '## 📋 任务描述\n\n' + userInput + '\n\n---\n\n*此 TODO 由 AI 助手自动创建*',
-                labels: ['task-open', 'priority:medium'],
+                labels: ['task-open', 'priority:medium', 'ai-generated'],
                 assignees: [context.actor]
               });
               
@@ -307,7 +307,7 @@ jobs:
             }
             
             // 确定标签
-            const labels = [taskType, 'priority:' + (parsedData.priority || 'medium')];
+            const labels = [taskType, 'priority:' + (parsedData.priority || 'medium'), 'ai-generated'];
             if (parsedData.module) {
               labels.push('module:' + parsedData.module);
             }

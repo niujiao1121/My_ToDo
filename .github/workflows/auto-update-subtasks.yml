@@ -16,9 +16,17 @@ jobs:
             const issueBody = context.payload.issue.body;
             const issueTitle = context.payload.issue.title;
             const issueNumber = context.payload.issue.number;
+            const issueLabels = context.payload.issue.labels.map(l => l.name);
             const repo = context.repo.repo;
             const owner = context.repo.owner;
-            // 匹配“原始输入来自: #数字”或“属于#数字”或“项目#数字”
+            
+            // Skip if issue has ai-generated label (already handled by ai-create-todo workflow)
+            if (issueLabels.includes('ai-generated')) {
+              console.log("Issue has ai-generated label, skipping (handled by ai-create-todo workflow).");
+              return;
+            }
+            
+            // 匹配"原始输入来自: #数字"或"属于#数字"或"项目#数字"
             const parentMatch = issueBody.match(/原始输入来自[:：]?\s*#(\d+)|属于#?(\d+)/i);
             const parentNumber = parentMatch ? (parentMatch[1] || parentMatch[2]) : null;
             if (!parentNumber) {
@@ -31,7 +39,7 @@ jobs:
             });
             let body = parent.data.body;
             const lines = body.split('\n');
-            // 找到“## 📝 子任务列表”，插入
+            // 找到"## 📝 子任务列表"，插入
             let found = false;
             for (let i = 0; i < lines.length; i++) {
               if (lines[i].includes("## 📝 子任务列表")) {
