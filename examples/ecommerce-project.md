@@ -23,21 +23,21 @@ Milestone: 2024 Q1
 
 ```
 Issue #101: [TASK] 用户系统重构
-标签: task-with-deadline, module:backend, priority:high
+标签: task-with-deadline, priority:high
 Parent: #100
 截止日期: 2024-02-15
 
 Issue #102: [TASK] 商品管理优化
-标签: task-with-deadline, module:backend, priority:high
+标签: task-with-deadline, priority:high
 Parent: #100
 截止日期: 2024-02-28
 
 Issue #103: [OPEN] 前端性能优化
-标签: task-open, module:frontend, priority:medium
+标签: task-open, priority:medium
 Parent: #100
 
 Issue #104: [TASK] 支付系统升级
-标签: task-with-deadline, module:backend, priority:critical
+标签: task-with-deadline, priority:critical
 Parent: #100
 截止日期: 2024-02-10
 ```
@@ -48,22 +48,22 @@ Parent: #100
 
 ```
 Issue #111: [SUBTASK] 实现OAuth2.0认证
-标签: subtask, module:backend, priority:high
+标签: subtask, priority:high
 Parent: #101
 预计: 3天
 
 Issue #112: [SUBTASK] 用户权限系统RBAC
-标签: subtask, module:backend, priority:high
+标签: subtask, priority:high
 Parent: #101
 预计: 5天
 
 Issue #113: [SUBTASK] 用户数据迁移
-标签: subtask, module:database, priority:high
+标签: subtask, priority:high
 Parent: #101
 预计: 2天
 
 Issue #114: [SUBTASK] 用户API单元测试
-标签: subtask, module:testing, priority:medium
+标签: subtask, priority:medium
 Parent: #101
 预计: 3天
 ```
@@ -72,17 +72,17 @@ Parent: #101
 
 ```
 Issue #121: [SUBTASK] 商品搜索优化
-标签: subtask, module:backend, priority:high
+标签: subtask, priority:high
 Parent: #102
 预计: 4天
 
 Issue #122: [SUBTASK] 库存管理系统
-标签: subtask, module:backend, priority:high
+标签: subtask, priority:high
 Parent: #102
 预计: 5天
 
 Issue #123: [SUBTASK] 商品图片服务
-标签: subtask, module:backend, module:devops, priority:medium
+标签: subtask, priority:medium
 Parent: #102
 预计: 3天
 ```
@@ -91,17 +91,17 @@ Parent: #102
 
 ```
 Issue #131: [SUBTASK] 实现懒加载
-标签: subtask, module:frontend, priority:medium
+标签: subtask, priority:medium
 Parent: #103
 开放性任务
 
 Issue #132: [SUBTASK] 优化打包体积
-标签: subtask, module:frontend, priority:low
+标签: subtask, priority:low
 Parent: #103
 开放性任务
 
 Issue #133: [SUBTASK] 添加缓存策略
-标签: subtask, module:frontend, priority:medium
+标签: subtask, priority:medium
 Parent: #103
 开放性任务
 ```
@@ -110,22 +110,22 @@ Parent: #103
 
 ```
 Issue #141: [SUBTASK] 接入微信支付V3
-标签: subtask, module:backend, priority:critical
+标签: subtask, priority:critical
 Parent: #104
 预计: 3天
 
 Issue #142: [SUBTASK] 接入支付宝SDK
-标签: subtask, module:backend, priority:critical
+标签: subtask, priority:critical
 Parent: #104
 预计: 3天
 
 Issue #143: [SUBTASK] 支付回调处理
-标签: subtask, module:backend, priority:critical
+标签: subtask, priority:critical
 Parent: #104
 预计: 2天
 
 Issue #144: [SUBTASK] 支付安全测试
-标签: subtask, module:testing, priority:critical
+标签: subtask, priority:critical
 Parent: #104
 预计: 2天
 ```
@@ -390,18 +390,18 @@ Milestone: 正式发布
 
 ### Epic/大功能标签
 ```
-#101: task-with-deadline, module:backend, priority:high
-#102: task-with-deadline, module:backend, priority:high
-#103: task-open, module:frontend, priority:medium
-#104: task-with-deadline, module:backend, priority:critical
+#101: task-with-deadline, priority:high
+#102: task-with-deadline, priority:high
+#103: task-open, priority:medium
+#104: task-with-deadline, priority:critical
 ```
 
 ### 子任务标签
 ```
-#111: subtask, module:backend, priority:high, type:feature
-#121: subtask, module:backend, priority:high, type:enhancement
-#131: subtask, module:frontend, priority:medium, type:enhancement
-#141: subtask, module:backend, priority:critical, type:feature
+#111: subtask, priority:high, type:feature
+#121: subtask, priority:high, type:enhancement
+#131: subtask, priority:medium, type:enhancement
+#141: subtask, priority:critical, type:feature
 ```
 
 ## 搜索查询示例
@@ -413,7 +413,7 @@ is:open label:priority:high label:project:"电商平台V2.0升级"
 
 ### 查看后端模块的进行中任务
 ```
-is:open label:module:backend label:status:in-progress
+is:open label: label:status:in-progress
 ```
 
 ### 查看本周截止的任务

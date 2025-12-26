@@ -98,12 +98,6 @@
 - task-open (绿色 #0E8A16)
 - subtask (浅蓝 #C5DEF5)
 
-模块分类：
-- module:frontend (青色 #006B75)
-- module:backend (蓝色 #1D76DB)
-- module:database (深蓝 #0052CC)
-- module:docs (淡紫 #D4C5F9)
-
 优先级：
 - priority:critical (深红 #B60205)
 - priority:high (红色 #D93F0B)
@@ -159,9 +153,6 @@ is:open label:priority:high
 
 # 有DDL的任务
 is:open label:task-with-deadline
-
-# 某个模块的开放性任务
-is:open label:task-open label:module:backend
 
 # 我的进行中任务
 is:open assignee:@me label:status:in-progress

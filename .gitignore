@@ -24,7 +24,7 @@ Desktop.ini
 *.bak
 *.log
 
-# Node modules (if adding automation later)
+# Node dependencies (if adding automation later)
 node_modules/
 npm-debug.log*
 

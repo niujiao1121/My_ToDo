@@ -208,7 +208,7 @@ gh issue list --label "priority:high" --json number --jq '.[].number' | \
   xargs -I {} gh issue edit {} --milestone "Q1 Release"
 
 # 批量分配
-gh issue list --label "module:backend" --no-assignee --json number --jq '.[].number' | \
+gh issue list --label "priority:high" --no-assignee --json number --jq '.[].number' | \
   xargs -I {} gh issue edit {} --add-assignee @backend-team
 ```
 
@@ -406,7 +406,6 @@ steps:
 1. **分类管理**
    ```
    类型标签（必选一个）: project, task, subtask
-   模块标签（必选一个）: module:*
    优先级标签（可选）: priority:*
    状态标签（可选）: status:*
    ```
@@ -416,7 +415,7 @@ steps:
    - 合并相似的标签
 
 3. **标签命名规范**
-   - 使用前缀分组：`module:`, `status:`, `type:`
+   - 使用前缀分组：`status:`, `type:`
    - 简短明了
    - 避免歧义
 

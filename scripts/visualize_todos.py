@@ -8,7 +8,6 @@ TODO 可视化脚本
 - 优先级
 - 截止日期
 - 状态
-- 模块
 - 从属关系
 
 使用方法：
@@ -23,27 +22,24 @@ TODO 可视化脚本
     python visualize_todos.py
 """
 
+import argparse
 import os
-import sys
-import json
 import re
+import sys
 from collections import defaultdict
 from datetime import datetime
-import argparse
 
-try:
-    import requests
-except ImportError:
-    print("错误：需要安装 requests 库")
-    print("请运行：pip install requests")
-    sys.exit(1)
+import requests
+
+from tag_config import TagConfig
 
 
 class TodoVisualizer:
-    def __init__(self, owner, repo, token):
+    def __init__(self, owner, repo, token, tag_config):
         self.owner = owner
         self.repo = repo
         self.token = token
+        self.tag_config = tag_config
         self.api_base = "https://api.github.com"
         self.headers = {
             "Authorization": f"token {token}",
@@ -137,53 +133,38 @@ class TodoVisualizer:
     def get_priority(self, issue):
         """获取优先级"""
         labels = [label["name"] for label in issue.get("labels", [])]
-        
+
+        priority_labels = self.tag_config.priority_labels
         priority_map = {
-            "priority:critical": ("🔴", "紧急"),
-            "priority:high": ("🟠", "重要"),
-            "priority:medium": ("🟡", "中等"),
-            "priority:low": ("🟢", "低"),
+            priority_labels.get("critical"): ("🔴", "紧急"),
+            priority_labels.get("high"): ("🟠", "重要"),
+            priority_labels.get("medium"): ("🟡", "中等"),
+            priority_labels.get("low"): ("🟢", "低"),
         }
-        
+
         for label in labels:
             if label in priority_map:
                 return priority_map[label]
         
         return ("⚪", "未设置")
     
-    def get_module(self, issue):
-        """获取模块"""
-        labels = [label["name"] for label in issue.get("labels", [])]
-        
-        module_map = {
-            "module:frontend": "前端",
-            "module:backend": "后端",
-            "module:database": "数据库",
-            "module:devops": "运维",
-            "module:design": "设计",
-            "module:docs": "文档",
-            "module:testing": "测试",
-        }
-        
-        for label in labels:
-            if label in module_map:
-                return module_map[label]
-        
-        return None
-    
     def get_task_type(self, issue):
         """获取任务类型"""
         labels = [label["name"] for label in issue.get("labels", [])]
-        
-        if "project" in labels:
+
+        task_types = self.tag_config.task_type_labels
+
+        if task_types.get("project") in labels:
             return "📦 项目"
-        elif "subtask" in labels:
+        elif task_types.get("subtask") in labels:
             return "📌 子任务"
-        elif "task-with-deadline" in labels:
+        elif task_types.get("task_with_deadline") in labels:
             return "⏰ 有期限"
-        elif "task-open" in labels:
+        elif task_types.get("task_open") in labels:
             return "🔓 开放性"
-        
+        elif task_types.get("epic") in labels:
+            return "🧭 Epic"
+
         return "📋 任务"
     
     def get_due_date(self, issue):
@@ -213,7 +194,6 @@ class TodoVisualizer:
         
         priority_icon, priority_text = self.get_priority(issue)
         task_type = self.get_task_type(issue)
-        module = self.get_module(issue)
         due_date = self.get_due_date(issue)
         
         # 基本信息
@@ -223,8 +203,6 @@ class TodoVisualizer:
             details = []
             details.append(f"{task_type}")
             details.append(f"{priority_icon}{priority_text}")
-            if module:
-                details.append(f"[{module}]")
             if due_date:
                 details.append(f"⏰{due_date}")
             
@@ -281,12 +259,13 @@ class TodoVisualizer:
         # 按任务类型分组
         projects = []
         tasks = []
-        
+        project_label = self.tag_config.task_type_labels.get("project")
+
         for issue_num in root_issues:
             issue = self.issue_map[issue_num]
             labels = [label["name"] for label in issue.get("labels", [])]
-            
-            if "project" in labels:
+
+            if project_label in labels:
                 projects.append(issue_num)
             else:
                 tasks.append(issue_num)
@@ -329,14 +308,6 @@ class TodoVisualizer:
                 _, priority_text = self.get_priority(issue)
                 priority_stats[priority_text] += 1
         
-        # 按模块统计
-        module_stats = defaultdict(int)
-        for issue in self.issues:
-            if issue["state"] == "open":  # 只统计未完成的
-                module = self.get_module(issue)
-                if module:
-                    module_stats[module] += 1
-        
         # 即将到期的任务
         upcoming_deadlines = []
         today = datetime.now().date()
@@ -363,11 +334,6 @@ class TodoVisualizer:
                 if count > 0:
                     print(f"  - {priority}: {count}")
         
-        if module_stats:
-            print(f"\n按模块（未完成）:")
-            for module, count in sorted(module_stats.items(), key=lambda x: -x[1]):
-                print(f"  - {module}: {count}")
-        
         if upcoming_deadlines:
             print(f"\n⚠️  即将到期的任务（7天内）:")
             upcoming_deadlines.sort(key=lambda x: x[2])
@@ -391,7 +357,11 @@ def main():
     parser.add_argument("--owner", help="GitHub 仓库所有者")
     parser.add_argument("--repo", help="GitHub 仓库名称")
     parser.add_argument("--token", help="GitHub Personal Access Token（也可以通过 GITHUB_TOKEN 环境变量设置）")
-    
+    parser.add_argument(
+        "--tag-config",
+        help="标签配置文件路径（默认使用仓库内的 .github/tags-config.json）",
+    )
+
     args = parser.parse_args()
     
     # 获取 token
@@ -437,7 +407,8 @@ def main():
             sys.exit(1)
     
     # 创建可视化器并运行
-    visualizer = TodoVisualizer(owner, repo, token)
+    tag_config = TagConfig(args.tag_config)
+    visualizer = TodoVisualizer(owner, repo, token, tag_config)
     visualizer.fetch_issues()
     visualizer.build_hierarchy()
     visualizer.visualize()
