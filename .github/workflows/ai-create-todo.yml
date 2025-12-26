@@ -13,12 +13,16 @@ permissions:
 jobs:
   ai-create-todo:
     runs-on: ubuntu-latest
+
+    concurrency:
+      group: ai-create-todo-${{ github.event.issue.number }}
+      cancel-in-progress: true
     
     # 只在以下情况运行：
-    # 1. Issue 带有 ai-todo-inbox 标签
+    # 1. Issue 在被打上 ai-todo-inbox 标签时触发
     # 2. 评论以 /todo 开头
     if: |
-      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'ai-todo-inbox')) ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ai-todo-inbox') ||
       (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/todo'))
     
     steps:
@@ -112,7 +116,29 @@ jobs:
               });
               return;
             }
-            
+
+            // 避免重复创建：如果当前 Issue 中已经有 AI 创建成功或批量创建的提示，则跳过
+            try {
+              const { data: existingComments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sourceIssueNumber,
+                per_page: 50
+              });
+
+              const processedMarkers = ['AI 已成功创建 TODO', '批量 TODO 创建完成'];
+              const alreadyProcessed = existingComments.some(comment =>
+                processedMarkers.some(marker => comment.body && comment.body.includes(marker))
+              );
+
+              if (alreadyProcessed) {
+                core.info('检测到当前 Issue 已有 AI 创建 TODO 的结果，跳过重复处理');
+                return;
+              }
+            } catch (commentError) {
+              core.warning('检查是否已处理时出错：' + commentError.message + '，将继续尝试创建');
+            }
+
             // 检查阿里云 API Key
             if (!process.env.DASHSCOPE_API_KEY) {
               await github.rest.issues.createComment({
