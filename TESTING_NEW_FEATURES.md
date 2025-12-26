@@ -32,7 +32,7 @@ This document provides step-by-step instructions for manually testing the two ne
 
 **Validation:**
 - Check that 3 new issues were created
-- Check that each issue has appropriate labels (subtask, module, priority)
+- Check that each issue has appropriate labels (subtask、priority)
 - Check that each issue is linked in the parent issue's subtask list
 - Check that each issue body contains a link back to the original issue
 
@@ -107,7 +107,6 @@ This document provides step-by-step instructions for manually testing the two ne
   - `subtask` (automatic)
   - `task-with-deadline` or `task-open` (based on deadline)
   - `priority:medium` (or as inferred by AI)
-  - `module:backend` (inferred by AI)
   - `sprint-1` (inherited from project)
   - `team-alpha` (inherited from project)
   - `q1-2024` (inherited from project)
@@ -130,11 +129,11 @@ This document provides step-by-step instructions for manually testing the two ne
 **Expected Results:**
 - Two new subtask issues are created
 - Both subtasks inherit all three project labels: `sprint-1`, `team-alpha`, `q1-2024`
-- Each subtask also has its own module label based on AI inference
+- Each subtask also has its own priority label based on AI inference
 
 **Validation:**
 - Check that both subtasks have the project labels
-- Check that they have different module labels based on content
+- Check that they have appropriate priority labels based on content
 
 ### Test Case 2.4: Project without custom labels (backward compatibility)
 

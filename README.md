@@ -140,6 +140,7 @@
    - 优先级：`priority:critical`, `priority:high`, `priority:medium`, `priority:low`
    - 状态：`status:planning`, `status:in-progress`, `status:blocked` 等
    - 类型：`type:feature`, `type:bug`, `type:documentation` 等
+   - **以上标签名称可以在 `.github/tags-config.json` 中集中配置**，所有脚本都通过 `TagConfig` 读取该文件进行逻辑判断和 GitHub 标签创建，无需到处改动代码。
 4. 建立任务关系（如果需要）：
    - 在描述中使用 `Parent: #issue_number` 标记父任务
    - 使用 `- [ ] #issue_number` 创建子任务清单
@@ -167,11 +168,6 @@
    - 选择模板或创建空白项目
    - 设置项目名称和描述
 
-2. **创建GitHub Project看板**（可选）
-   - 进入Repository → Projects → New Project
-   - 选择模板或创建空白项目
-   - 设置项目名称和描述
-
 3. **创建Milestone**（可选，用于有DDL的项目）
    - 进入Issues → Milestones → New Milestone
    - 设置截止日期和描述
@@ -184,10 +180,6 @@ sprint-1, frontend-team
 然后使用 `/todo` 命令为该项目创建子任务时，子任务会自动继承 `sprint-1` 和 `frontend-team` 标签。这样你就可以：
 - 通过标签 `sprint-1` 查看该冲刺的所有任务
 - 通过标签 `frontend-team` 查看前端团队的所有任务
-
-2. **创建Milestone（可选，用于有DDL的项目）**
-   - 进入Issues → Milestones → New Milestone
-   - 设置截止日期和描述
 
 ### 创建 TODO
 

@@ -60,7 +60,7 @@ Level 4+: Implementation Details (实现细节)
 一个Issue可以同时拥有多个标签：
 ```
 Issue #45: 实现用户认证系统
-标签: epic, module:backend, priority:high, task-with-deadline
+标签: epic, priority:high, task-with-deadline
 ```
 
 ## 实际应用场景
@@ -70,7 +70,7 @@ Issue #45: 实现用户认证系统
 ```
 项目: 电商平台升级 (#100) [project]
 │
-├── 用户系统改造 (#101) [epic, module:backend]
+├── 用户系统改造 (#101) [epic]
 │   ├── 实现OAuth2.0 (#102) [task-with-deadline]
 │   │   ├── 配置第三方登录 (#103) [subtask]
 │   │   ├── 实现token管理 (#104) [subtask]
@@ -80,11 +80,11 @@ Issue #45: 实现用户认证系统
 │       ├── 设计RBAC模型 (#107) [subtask]
 │       └── 实现权限中间件 (#108) [subtask]
 │
-├── 支付系统集成 (#109) [epic, module:backend]
+├── 支付系统集成 (#109) [epic]
 │   ├── 接入微信支付 (#110) [task-with-deadline]
 │   └── 接入支付宝 (#111) [task-open]
 │
-└── 前端界面优化 (#112) [epic, module:frontend]
+└── 前端界面优化 (#112) [epic]
     ├── 响应式设计 (#113) [task-with-deadline]
     └── 性能优化 (#114) [task-open]
 ```
@@ -94,7 +94,7 @@ Issue #45: 实现用户认证系统
 ```
 项目: 代码重构2024Q1 (#200) [project, task-open]
 │
-├── 后端重构 (#201) [epic, module:backend]
+├── 后端重构 (#201) [epic]
 │   ├── 数据库查询优化 (#202) [task-open]
 │   │   ├── 添加索引 (#203) [subtask]
 │   │   ├── 优化N+1查询 (#204) [subtask]
@@ -104,7 +104,7 @@ Issue #45: 实现用户认证系统
 │       ├── 重构service层 (#207) [subtask]
 │       └── 统一错误处理 (#208) [subtask]
 │
-└── 文档完善 (#209) [epic, module:docs]
+└── 文档完善 (#209) [epic]
     ├── API文档 (#210) [task-open]
     └── 架构文档 (#211) [task-open]
 ```
@@ -207,8 +207,8 @@ is:open label:status:in-progress label:priority:high
 # 查看本周截止的任务
 is:open milestone:"2024 Week 12"
 
-# 查看某个模块的所有开放性任务
-is:open label:task-open label:module:backend
+# 查看某个团队的所有开放性任务
+is:open label:task-open label:team-backend
 
 # 查看被阻塞的任务
 is:open label:status:blocked
@@ -219,9 +219,9 @@ is:open label:subtask 项目名称
 
 ### 使用Projects视图
 
-1. **按模块分组**
-   - Group by: Labels (module:*)
-   - 快速查看各模块的任务分布
+1. **按团队分组**
+   - Group by: Labels (team:*)
+   - 快速查看各团队的任务分布
 
 2. **按优先级排序**
    - Sort by: Labels (priority:*)
@@ -251,7 +251,7 @@ is:open label:subtask 项目名称
 ### GitHub CLI
 ```bash
 # 快速创建带标签的Issue
-gh issue create --label "task,module:backend,priority:high" --title "实现用户认证"
+gh issue create --label "task,priority:high" --title "实现用户认证"
 
 # 列出高优先级任务
 gh issue list --label "priority:high" --state open

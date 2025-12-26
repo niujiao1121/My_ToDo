@@ -119,7 +119,7 @@ My_ToDo/
 - `task-open` - 开放性任务
 - `subtask` - 子任务
 
-**模块分类**: `module:frontend`, `module:backend`, `module:database`等
+**类型分类示例**: `type:feature`, `type:bug`, `type:documentation`等
 
 **优先级**: `priority:critical`, `priority:high`, `priority:medium`, `priority:low`
 

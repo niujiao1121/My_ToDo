@@ -81,8 +81,8 @@ labels: ['project']
 **预期收益**: 
 提升系统安全性，支持多用户访问
 
-**项目标签**: 
-sprint-1, auth-module, v2.0
+**项目标签**:
+sprint-1, team-auth, v2.0
 
 <!-- 这些标签会自动应用到所有子任务 -->
 ```
@@ -98,14 +98,14 @@ sprint-1, auth-module, v2.0
 ### 系统行为
 
 1. 创建新的子任务 Issue（如 #31）
-2. 从父任务 #30 中提取项目标签：`sprint-1`, `auth-module`, `v2.0`
+2. 从父任务 #30 中提取项目标签：`sprint-1`, `team-auth`, `v2.0`
 3. 将这些标签自动添加到子任务 #31
 4. 子任务 #31 最终的标签：
    - `subtask`（自动添加）
    - `task-with-deadline` 或 `task-open`（根据是否有截止日期）
    - `priority:medium`（AI 推断或默认）
    - `sprint-1`（从项目继承）
-   - `auth-module`（从项目继承）
+   - `team-auth`（从项目继承）
    - `v2.0`（从项目继承）
 
 ### 步骤 3：筛选和管理
@@ -113,7 +113,7 @@ sprint-1, auth-module, v2.0
 现在你可以通过标签轻松筛选：
 
 - 查看 `sprint-1` 标签：显示第一个冲刺的所有任务
-- 查看 `auth-module` 标签：显示认证模块的所有任务
+- 查看 `team-auth` 标签：显示认证相关的所有任务
 - 查看 `v2.0` 标签：显示 2.0 版本的所有任务
 - 组合筛选：`sprint-1` + `priority:high`：显示第一个冲刺的高优先级任务
 
@@ -198,7 +198,7 @@ is:closed label:sprint-1
 **1. 创建项目 Issue #50**
 ```markdown
 **项目名称**: 博客系统重构
-**项目标签**: refactor-2024, blog-module, tech-debt
+**项目标签**: refactor-2024, blog-revamp, tech-debt
 ```
 
 **2. 在 #50 下批量创建子任务**
@@ -212,12 +212,12 @@ is:closed label:sprint-1
 **3. 结果**
 - 创建了 4 个子任务（#51, #52, #53, #54）
 - 所有子任务都自动关联到 #50
-- 所有子任务都继承了 `refactor-2024`, `blog-module`, `tech-debt` 标签
-- 每个子任务还有各自的模块标签和优先级
+- 所有子任务都继承了 `refactor-2024`, `blog-revamp`, `tech-debt` 标签
+- 每个子任务都有各自的优先级标签
 
 **4. 管理和跟踪**
 - 查看所有重构任务：筛选 `refactor-2024` 标签
-- 查看博客模块任务：筛选 `blog-module` 标签
+- 查看博客相关任务：筛选 `blog-revamp` 标签
 - 查看技术债务任务：筛选 `tech-debt` 标签
 - 组合筛选：快速找到特定类型的任务
 

@@ -22,7 +22,7 @@
 - `task-with-deadline` (红色)  
 - `task-open` (绿色)
 - `subtask` (浅蓝色)
-- `module:backend`, `module:frontend` 等（蓝色系）
+- `type:feature`, `type:bug` 等（蓝色系）
 - `priority:high`, `priority:medium`, `priority:low` (红黄绿)
 
 ### 方式二：使用GitHub CLI批量创建
@@ -85,7 +85,7 @@ gh label create "subtask" --color "C5DEF5" --description "子任务"
 - [ ] 评审通过
 ```
 
-4. 添加标签：`task-with-deadline`, `module:docs`, `priority:high`
+4. 添加标签：`task-with-deadline`, `priority:high`
 5. 在Issue描述中添加：`Parent: #1`（关联到项目）
 6. 提交Issue，假设得到 #2
 
@@ -197,7 +197,7 @@ gh issue list --search "我的第一个项目"
 # 创建带标签的任务
 gh issue create \
   --title "[TASK] 编写测试用例" \
-  --label "task-with-deadline,module:testing,priority:medium" \
+  --label "task-with-deadline,priority:medium" \
   --body "为核心功能编写单元测试"
 
 # 分配给自己

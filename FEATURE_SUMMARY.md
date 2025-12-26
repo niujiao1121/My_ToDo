@@ -73,7 +73,6 @@ sprint-1, team-frontend, Q1-2024
 - `subtask` (自动)
 - `task-with-deadline` (根据是否有截止日期)
 - `priority:medium` (AI 推断或默认)
-- `module:backend` (AI 推断)
 - `sprint-1` ⭐ (从项目继承)
 - `team-frontend` ⭐ (从项目继承)
 - `Q1-2024` ⭐ (从项目继承)

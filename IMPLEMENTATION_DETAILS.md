@@ -58,7 +58,6 @@ createdIssues = [
     url: "https://...",
     priority: "medium",
     dueDate: "2024-01-15",
-    module: "backend",
     parent: "100"
   },
   // or for failures:
@@ -122,7 +121,7 @@ const regex = /\*\*项目标签\*\*:\s*(?:<!--[\s\S]*?-->\s*)*([^\n<]+)/;
 const systemLabels = [
   'project', 'epic', 'task-with-deadline', 'task-open', 'subtask',
   'ai-todo-inbox',
-  'priority:*', 'module:*', 'status:*', 'type:*',
+  'priority:*', 'status:*', 'type:*',
   // ... etc
 ];
 ```
@@ -138,7 +137,7 @@ projectLabels = labelText.split(/[,，\s]+/)
 ### Integration with Batch Creation
 - Both features work together seamlessly
 - When batch creating subtasks under a project, all subtasks inherit project labels
-- Each subtask still gets its own AI-inferred labels (module, priority)
+- Each subtask still gets its own AI-inferred labels（如优先级）
 
 ## Testing Strategy
 

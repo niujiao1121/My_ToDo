@@ -36,11 +36,11 @@
 │  │   ↓                                                  │      │
 │  │ Call AI API (Alibaba Qwen)                          │      │
 │  │   ↓                                                  │      │
-│  │ Parse: title, description, priority, module, etc.   │      │
+│  │ Parse: title, description, priority, etc.           │      │
 │  │   ↓                                                  │      │
 │  │ Create Issue #101                                   │      │
 │  │   ↓                                                  │      │
-│  │ Add labels: subtask, priority:medium, module:backend│      │
+│  │ Add labels: subtask, priority:medium                │      │
 │  │   ↓                                                  │      │
 │  │ Link to parent issue                                │      │
 │  │   ↓                                                  │      │
@@ -76,9 +76,9 @@
 │  📊 统计: 成功 3 个，失败 0 个                                   │
 │                                                                 │
 │  ### ✅ 成功创建的 TODO                                         │
-│  1. [#101](url) - 实现用户注册 `backend` (子任务 #100)          │
-│  2. [#102](url) - 实现用户登录 `backend` (子任务 #100)          │
-│  3. [#103](url) - 设计用户界面 `frontend` (子任务 #100)         │
+│  1. [#101](url) - 实现用户注册 (子任务 #100)                    │
+│  2. [#102](url) - 实现用户登录 (子任务 #100)                    │
+│  3. [#103](url) - 设计用户界面 (子任务 #100)                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -133,7 +133,7 @@
 │           Extract Custom Labels from Parent Labels              │
 │                                                                 │
 │  Parent has labels: [project, priority:high, custom-label]     │
-│  System labels: [project, priority:*, module:*, ...]           │
+│  System labels: [project, priority:*, ...]                     │
 │  Custom labels: [custom-label]                                 │
 │  Combined: ["sprint-1", "team-backend", "v2.0", "custom-label"]│
 └──────────────────────┬──────────────────────────────────────────┘
@@ -147,7 +147,7 @@
 │    - subtask (auto)                                             │
 │    - task-with-deadline (from AI)                               │
 │    - priority:medium (from AI)                                 │
-│    - module:backend (from AI)                                  │
+│    - status:in-progress (from AI)                              │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
@@ -167,7 +167,7 @@
 │  ✅ subtask                                                     │
 │  ✅ task-with-deadline                                          │
 │  ✅ priority:medium                                             │
-│  ✅ module:backend                                              │
+│  ✅ status:in-progress                                          │
 │  ✅ sprint-1          ← Inherited from project                 │
 │  ✅ team-backend      ← Inherited from project                 │
 │  ✅ v2.0              ← Inherited from project                 │
@@ -202,13 +202,13 @@
 │    2. Create issue                                              │
 │    3. Get parent (#200) labels                                  │
 │    4. Inherit: sprint-2, milestone-1                            │
-│    5. Add AI labels: module:*, priority:*                       │
+│    5. Add AI labels: priority:*                                 │
 │    6. Link to parent #200                                       │
 │                                                                 │
 │  Result:                                                        │
-│    Issue #201 (任务A) - [frontend, sprint-2, milestone-1]       │
-│    Issue #202 (任务B) - [backend, sprint-2, milestone-1]        │
-│    Issue #203 (任务C) - [testing, sprint-2, milestone-1]        │
+│    Issue #201 (任务A) - [sprint-2, milestone-1]                 │
+│    Issue #202 (任务B) - [sprint-2, milestone-1]                 │
+│    Issue #203 (任务C) - [sprint-2, milestone-1]                 │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
@@ -218,7 +218,7 @@
 │  ✅ 3 subtasks created in one operation                         │
 │  ✅ All linked to parent project #200                           │
 │  ✅ All inherit sprint-2 and milestone-1 labels                 │
-│  ✅ Each has its own AI-inferred module label                   │
+│  ✅ All AI labels applied consistently                           │
 │  ✅ Easy to filter: label:sprint-2 shows all 3                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -320,7 +320,7 @@ Child Issue (#105)
 │  ├─ subtask
 │  ├─ task-with-deadline
 │  ├─ priority:medium
-│  └─ module:backend
+│  └─ status:in-progress
 │
 └─ + Inherited Labels
    ├─ sprint-1 (from body)
