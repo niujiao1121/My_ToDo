@@ -34,5 +34,5 @@ jobs:
           git remote remove mirror 2>/dev/null || true
           git remote add mirror "https://x-access-token:${MIRROR_SYNC_TOKEN}@github.com/niujiao1121/My_ToDo.git"
 
-          # 镜像推送：分支、远端跟踪引用、标签等都按镜像同步
-          git push --mirror mirror
+          # 仅同步分支和标签，避免推送 refs/pull/* 等受保护引用导致报错
+          git push --prune mirror "refs/heads/*:refs/heads/*" "refs/tags/*:refs/tags/*"
