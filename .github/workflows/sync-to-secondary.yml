@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write-all
+  contents: read
 
 jobs:
   sync:
