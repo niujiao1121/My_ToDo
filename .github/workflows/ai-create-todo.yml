@@ -117,7 +117,9 @@ jobs:
               return;
             }
 
-            // 避免重复创建：如果当前 Issue 中已经有 AI 创建成功或批量创建的提示，则跳过
+            // 避免重复创建：
+            // - 对 issue_comment 触发，只有当最新的 /todo 评论之后已经有机器人生成的结果时才跳过
+            // - 对 issues 触发，保持原有的防重复逻辑
             try {
               const { data: existingComments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
@@ -127,9 +129,34 @@ jobs:
               });
 
               const processedMarkers = ['AI 已成功创建 TODO', '批量 TODO 创建完成'];
-              const alreadyProcessed = existingComments.some(comment =>
-                processedMarkers.some(marker => comment.body && comment.body.includes(marker))
-              );
+              const isMarkerComment = (comment) =>
+                processedMarkers.some(marker => comment.body && comment.body.includes(marker)) &&
+                comment.user && comment.user.login === 'github-actions[bot]';
+
+              let alreadyProcessed = false;
+
+              if (context.eventName === 'issue_comment') {
+                const currentCreatedAt = new Date(context.payload.comment.created_at);
+
+                // 找到当前评论之前（含当前）的最新 /todo 评论时间
+                const latestTodoComment = existingComments
+                  .filter(c => {
+                    const hasTodo = (c.body || '').toLowerCase().includes('/todo');
+                    return hasTodo && new Date(c.created_at) <= currentCreatedAt;
+                  })
+                  .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+                if (latestTodoComment) {
+                  const latestTodoTime = new Date(latestTodoComment.created_at);
+
+                  // 只有当最新的 /todo 评论之后已经有机器人回复了成功/批量完成提示才认为已处理
+                  alreadyProcessed = existingComments.some(comment =>
+                    isMarkerComment(comment) && new Date(comment.created_at) >= latestTodoTime
+                  );
+                }
+              } else {
+                alreadyProcessed = existingComments.some(comment => isMarkerComment(comment));
+              }
 
               if (alreadyProcessed) {
                 core.info('检测到当前 Issue 已有 AI 创建 TODO 的结果，跳过重复处理');
