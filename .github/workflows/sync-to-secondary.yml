@@ -1,0 +1,38 @@
+name: 同步到 niujiao1121/My_ToDo
+
+on:
+  push:
+    branches:
+      - main
+      - work
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    if: github.repository_owner == 'niujiao1121'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Fetch all branches
+        run: git fetch --prune --tags --all
+
+      - name: Push to mirror repository
+        env:
+          MIRROR_SYNC_TOKEN: ${{ secrets.MIRROR_SYNC_TOKEN }}
+        run: |
+          if [ -z "$MIRROR_SYNC_TOKEN" ]; then
+            echo "❌ MIRROR_SYNC_TOKEN secret is not set."
+            exit 1
+          fi
+
+          git remote add mirror https://x-access-token:${MIRROR_SYNC_TOKEN}@github.com/niujiao1121/My_ToDo.git
+          git push --prune mirror --all
+          git push --prune mirror --tags
