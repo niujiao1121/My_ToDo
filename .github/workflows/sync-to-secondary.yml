@@ -28,6 +28,7 @@ jobs:
         env:
           MIRROR_SYNC_TOKEN: ${{ secrets.MIRROR_SYNC_TOKEN }}
         run: |
+          echo "MIRROR_SYNC_TOKEN=${MIRROR_SYNC_TOKEN:0:4}****"
           if [ -z "$MIRROR_SYNC_TOKEN" ]; then
             echo "❌ MIRROR_SYNC_TOKEN secret is not set."
             exit 1
