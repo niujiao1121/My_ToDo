@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write-all
 
 jobs:
   sync:
@@ -34,6 +34,6 @@ jobs:
             exit 1
           fi
 
-          git remote add mirror https://x-access-token:${MIRROR_SYNC_TOKEN}@github.com/niujiao1121/My_ToDo.git
+          git remote add mirror https://${GITHUB_ACTOR}:${MIRROR_SYNC_TOKEN}@github.com/niujiao1121/My_ToDo.git
           git push --prune mirror --all
           git push --prune mirror --tags
