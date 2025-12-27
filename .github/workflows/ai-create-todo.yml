@@ -23,7 +23,7 @@ jobs:
     # 2. 评论以 /todo 开头
     if: |
       (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ai-todo-inbox') ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/todo'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/todo'))
     
     steps:
       - name: 检查权限
@@ -85,13 +85,13 @@ jobs:
               }
               userInputs.push(userInput);
             } else if (context.eventName === 'issue_comment') {
-              const comment = context.payload.comment.body;
+              const comment = (context.payload.comment.body || '').trim();
               sourceIssueNumber = context.payload.issue.number;
               // 当从评论创建时，自动设置父任务为被评论的issue
               autoParentIssue = sourceIssueNumber;
-              
+
               // 检测多个 /todo 命令（支持批量创建）
-              const todoPattern = /^\/todo\s+(.+)$/gm;
+              const todoPattern = /^\/todo\s+(.+)$/gmi;
               const matches = [...comment.matchAll(todoPattern)];
               
               if (matches.length > 0) {
@@ -100,7 +100,7 @@ jobs:
                 core.info('检测到 ' + matches.length + ' 个 /todo 命令');
               } else {
                 // 兼容旧格式：整个评论以 /todo 开头
-                const singleTodo = comment.replace(/^\/todo\s+/, '').trim();
+                const singleTodo = comment.replace(/^\/todo\s+/i, '').trim();
                 if (singleTodo) {
                   userInputs.push(singleTodo);
                 }
@@ -117,7 +117,9 @@ jobs:
               return;
             }
 
-            // 避免重复创建：如果当前 Issue 中已经有 AI 创建成功或批量创建的提示，则跳过
+            // 避免重复创建：
+            // - 对 issue_comment 触发，只有当最新的 /todo 评论之后已经有机器人生成的结果时才跳过
+            // - 对 issues 触发，保持原有的防重复逻辑
             try {
               const { data: existingComments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
@@ -127,9 +129,34 @@ jobs:
               });
 
               const processedMarkers = ['AI 已成功创建 TODO', '批量 TODO 创建完成'];
-              const alreadyProcessed = existingComments.some(comment =>
-                processedMarkers.some(marker => comment.body && comment.body.includes(marker))
-              );
+              const isMarkerComment = (comment) =>
+                processedMarkers.some(marker => comment.body && comment.body.includes(marker)) &&
+                comment.user && comment.user.login === 'github-actions[bot]';
+
+              let alreadyProcessed = false;
+
+              if (context.eventName === 'issue_comment') {
+                const currentCreatedAt = new Date(context.payload.comment.created_at);
+
+                // 找到当前评论之前（含当前）的最新 /todo 评论时间
+                const latestTodoComment = existingComments
+                  .filter(c => {
+                    const hasTodo = (c.body || '').toLowerCase().includes('/todo');
+                    return hasTodo && new Date(c.created_at) <= currentCreatedAt;
+                  })
+                  .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
+                if (latestTodoComment) {
+                  const latestTodoTime = new Date(latestTodoComment.created_at);
+
+                  // 只有当最新的 /todo 评论之后已经有机器人回复了成功/批量完成提示才认为已处理
+                  alreadyProcessed = existingComments.some(comment =>
+                    isMarkerComment(comment) && new Date(comment.created_at) >= latestTodoTime
+                  );
+                }
+              } else {
+                alreadyProcessed = existingComments.some(comment => isMarkerComment(comment));
+              }
 
               if (alreadyProcessed) {
                 core.info('检测到当前 Issue 已有 AI 创建 TODO 的结果，跳过重复处理');
