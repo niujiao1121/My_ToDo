@@ -1,46 +1,38 @@
-name: 同步到 niujiao1121/My_ToDo
+name: Mirror sync to niujiao1121/My_ToDo
 
 on:
   push:
-    branches:
-      - main
-      - work
+    branches: [main, work]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: read   # 让 GITHUB_TOKEN 能读源仓库即可
 
 jobs:
   sync:
-    # secrets 上下文不能直接用于作业级 if，改为仅检查仓库所有者，令牌在步骤中校验
     if: github.repository_owner == 'niujiao1121'
     runs-on: ubuntu-latest
-    env:
-      MIRROR_SYNC_TOKEN: ${{ secrets.MIRROR_SYNC_TOKEN }}
-      MIRROR_SYNC_USERNAME: ${{ secrets.MIRROR_SYNC_USERNAME }}
     steps:
-      - name: Checkout source repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
+      - name: Mirror clone source repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git clone --mirror "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo.git
 
-      - name: Fetch all branches
-        run: git fetch --prune --tags --all
-
-      - name: Push to mirror repository
+      - name: Push mirror to target repo
         env:
           MIRROR_SYNC_TOKEN: ${{ secrets.MIRROR_SYNC_TOKEN }}
-          MIRROR_SYNC_USERNAME: ${{ secrets.MIRROR_SYNC_USERNAME }}
         run: |
-          if [ -z "$MIRROR_SYNC_TOKEN" ]; then
+          set -euo pipefail
+          if [ -z "${MIRROR_SYNC_TOKEN:-}" ]; then
             echo "❌ MIRROR_SYNC_TOKEN secret is not set."
             exit 1
           fi
 
-          username="${MIRROR_SYNC_USERNAME:-x-access-token}"
+          cd repo.git
+          git remote remove mirror 2>/dev/null || true
+          git remote add mirror "https://x-access-token:${MIRROR_SYNC_TOKEN}@github.com/niujiao1121/My_ToDo.git"
 
-          git remote add mirror https://${username}:${MIRROR_SYNC_TOKEN}@github.com/niujiao1121/My_ToDo.git
-          git push --prune mirror --all
-          git push --prune mirror --tags
+          # 镜像推送：分支、远端跟踪引用、标签等都按镜像同步
+          git push --mirror mirror
