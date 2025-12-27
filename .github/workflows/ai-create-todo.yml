@@ -23,7 +23,7 @@ jobs:
     # 2. 评论以 /todo 开头
     if: |
       (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ai-todo-inbox') ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/todo'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/todo'))
     
     steps:
       - name: 检查权限
@@ -85,13 +85,13 @@ jobs:
               }
               userInputs.push(userInput);
             } else if (context.eventName === 'issue_comment') {
-              const comment = context.payload.comment.body;
+              const comment = (context.payload.comment.body || '').trim();
               sourceIssueNumber = context.payload.issue.number;
               // 当从评论创建时，自动设置父任务为被评论的issue
               autoParentIssue = sourceIssueNumber;
-              
+
               // 检测多个 /todo 命令（支持批量创建）
-              const todoPattern = /^\/todo\s+(.+)$/gm;
+              const todoPattern = /^\/todo\s+(.+)$/gmi;
               const matches = [...comment.matchAll(todoPattern)];
               
               if (matches.length > 0) {
@@ -100,7 +100,7 @@ jobs:
                 core.info('检测到 ' + matches.length + ' 个 /todo 命令');
               } else {
                 // 兼容旧格式：整个评论以 /todo 开头
-                const singleTodo = comment.replace(/^\/todo\s+/, '').trim();
+                const singleTodo = comment.replace(/^\/todo\s+/i, '').trim();
                 if (singleTodo) {
                   userInputs.push(singleTodo);
                 }
