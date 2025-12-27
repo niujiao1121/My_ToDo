@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   sync:
-    if: github.repository_owner == 'niujiao1121' && env.MIRROR_SYNC_TOKEN != ''
+    if: github.repository_owner == 'niujiao1121' && secrets.MIRROR_SYNC_TOKEN != ''
     runs-on: ubuntu-latest
     env:
       MIRROR_SYNC_TOKEN: ${{ secrets.MIRROR_SYNC_TOKEN }}
