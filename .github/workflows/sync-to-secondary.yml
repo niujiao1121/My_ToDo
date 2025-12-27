@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   sync:
-    if: github.repository_owner == 'niujiao1121'
+    # 仅在源仓库执行镜像同步，避免被同步的目标仓库再次触发本工作流
+    if: github.repository == 'niujiao1121/My_AI_ToDo'
     runs-on: ubuntu-latest
     steps:
       - name: Mirror clone source repo
