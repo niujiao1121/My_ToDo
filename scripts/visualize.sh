@@ -1,6 +1,8 @@
 #!/bin/bash
 # TODO 可视化脚本的便捷启动器
 
+export GITHUB_TOKEN=$(cat /home/niujiao/github/github_token)
+
 # 检查是否安装了 Python
 if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
     echo "错误：未找到 Python"

@@ -35,11 +35,27 @@ from tag_config import TagConfig
 
 
 class TodoVisualizer:
-    def __init__(self, owner, repo, token, tag_config):
+    def __init__(
+        self,
+        owner,
+        repo,
+        token, 
+        tag_config,
+        hide_closed=True,
+        include_labels=None,
+        priorities=None,
+        show_details=True,
+        export_json_path=None,
+    ):
         self.owner = owner
         self.repo = repo
         self.token = token
         self.tag_config = tag_config
+        self.hide_closed = hide_closed
+        self.include_labels = set(include_labels or [])
+        self.priorities = set(priorities or [])
+        self.show_details = show_details
+        self.export_json_path = export_json_path
         self.api_base = "https://api.github.com"
         self.headers = {
             "Authorization": f"token {token}",
@@ -48,6 +64,7 @@ class TodoVisualizer:
         self.issues = []
         self.issue_map = {}
         self.children_map = defaultdict(list)
+        self.filtered_issue_nums = set()
         
     def fetch_issues(self):
         """获取所有 Issues"""
@@ -129,6 +146,35 @@ class TodoVisualizer:
                 issue["parent"] = None
         
         print(f"✓ 已分析完成\n")
+
+    def _priority_label_map(self):
+        return {
+            "critical": "priority:critical",
+            "high": "priority:high",
+            "medium": "priority:medium",
+            "low": "priority:low",
+        }
+
+    def filter_issue(self, issue):
+        if self.hide_closed and issue["state"] == "closed":
+            return False
+
+        labels = {label["name"] for label in issue.get("labels", [])}
+
+        if self.include_labels and not labels.intersection(self.include_labels):
+            return False
+
+        priority_labels = {self._priority_label_map().get(p) for p in self.priorities}
+        priority_labels.discard(None)
+        if priority_labels and not labels.intersection(priority_labels):
+            return False
+
+        return True
+
+    def apply_filters(self):
+        filtered = [issue for issue in self.issues if self.filter_issue(issue)]
+        self.filtered_issue_nums = {issue["number"] for issue in filtered}
+        return filtered
     
     def get_priority(self, issue):
         """获取优先级"""
@@ -186,11 +232,14 @@ class TodoVisualizer:
         
         return None
     
-    def format_issue(self, issue, show_details=True):
+    def format_issue(self, issue, show_details=None):
         """格式化单个 Issue 的显示"""
         number = issue["number"]
         title = issue["title"]
         state = "✓" if issue["state"] == "closed" else "◯"
+
+        if show_details is None:
+            show_details = self.show_details
         
         priority_icon, priority_text = self.get_priority(issue)
         task_type = self.get_task_type(issue)
@@ -215,25 +264,25 @@ class TodoVisualizer:
         """递归打印树状结构"""
         if visited is None:
             visited = set()
-        
+
         if issue_num in visited:
             # 避免循环引用
             return
-        
+
         visited.add(issue_num)
-        
+
         issue = self.issue_map.get(issue_num)
         if not issue:
             return
-        
+
         # 打印当前节点
         connector = "└── " if is_last else "├── "
         print(prefix + connector + self.format_issue(issue))
-        
+
         # 打印子节点
-        children = self.children_map.get(issue_num, [])
+        children = [c for c in self.children_map.get(issue_num, []) if c in self.filtered_issue_nums]
         children.sort()  # 按编号排序
-        
+
         for i, child_num in enumerate(children):
             is_last_child = (i == len(children) - 1)
             extension = "    " if is_last else "│   "
@@ -241,21 +290,24 @@ class TodoVisualizer:
     
     def visualize(self):
         """可视化所有 TODOs"""
+        filtered_issues = self.apply_filters()
+
         print("=" * 80)
         print(f"📊 TODO 层级结构可视化 - {self.owner}/{self.repo}")
         print("=" * 80)
         print()
-        
-        # 找出所有根节点（没有父任务的 Issue）
-        root_issues = [
-            issue["number"] for issue in self.issues 
-            if not issue.get("parent")
-        ]
-        
-        if not root_issues:
-            print("没有找到任何 Issue")
+
+        if not filtered_issues:
+            print("没有找到符合条件的 Issue（可能全部被过滤）")
             return
-        
+
+        # 找出所有根节点（没有父任务或父任务已被过滤的 Issue）
+        root_issues = [
+            issue["number"]
+            for issue in filtered_issues
+            if not issue.get("parent") or issue.get("parent") not in self.filtered_issue_nums
+        ]
+
         # 按任务类型分组
         projects = []
         tasks = []
@@ -269,7 +321,7 @@ class TodoVisualizer:
                 projects.append(issue_num)
             else:
                 tasks.append(issue_num)
-        
+
         # 打印项目
         if projects:
             print("🎯 项目列表")
@@ -278,7 +330,7 @@ class TodoVisualizer:
                 is_last = (i == len(projects) - 1) and not tasks
                 self.print_tree(issue_num, "", is_last)
             print()
-        
+
         # 打印独立任务
         if tasks:
             print("📋 独立任务列表")
@@ -287,23 +339,27 @@ class TodoVisualizer:
                 is_last = (i == len(tasks) - 1)
                 self.print_tree(issue_num, "", is_last)
             print()
-        
+
         # 统计信息
-        self.print_statistics()
+        self.print_statistics(filtered_issues)
+
+        # 导出 JSON（可选）
+        if self.export_json_path:
+            self.export_to_json(root_issues, filtered_issues)
     
-    def print_statistics(self):
-        """打印统计信息"""
+    def print_statistics(self, issues):
+        """打印统计信息（基于过滤后的结果）"""
         print("=" * 80)
         print("📈 统计信息")
         print("=" * 80)
-        
-        total = len(self.issues)
-        open_count = sum(1 for issue in self.issues if issue["state"] == "open")
+
+        total = len(issues)
+        open_count = sum(1 for issue in issues if issue["state"] == "open")
         closed_count = total - open_count
-        
+
         # 按优先级统计
         priority_stats = defaultdict(int)
-        for issue in self.issues:
+        for issue in issues:
             if issue["state"] == "open":  # 只统计未完成的
                 _, priority_text = self.get_priority(issue)
                 priority_stats[priority_text] += 1
@@ -311,22 +367,22 @@ class TodoVisualizer:
         # 即将到期的任务
         upcoming_deadlines = []
         today = datetime.now().date()
-        for issue in self.issues:
+        for issue in issues:
             if issue["state"] == "open":
                 due_date = self.get_due_date(issue)
                 if due_date:
                     try:
                         due = datetime.strptime(due_date, "%Y-%m-%d").date()
                         days_left = (due - today).days
-                        if days_left >= 0 and days_left <= 7:
+                        if 0 <= days_left <= 7:
                             upcoming_deadlines.append((issue, due_date, days_left))
                     except (ValueError, AttributeError):
                         pass
-        
+
         print(f"\n总任务数: {total}")
         print(f"  - 进行中/未完成: {open_count}")
         print(f"  - 已完成: {closed_count}")
-        
+
         if priority_stats:
             print(f"\n按优先级（未完成）:")
             for priority in ["紧急", "重要", "中等", "低", "未设置"]:
@@ -340,8 +396,63 @@ class TodoVisualizer:
             for issue, due_date, days_left in upcoming_deadlines[:5]:  # 只显示前5个
                 days_text = "今天" if days_left == 0 else f"{days_left}天后"
                 print(f"  - #{issue['number']}: {issue['title']} (截止: {due_date}, {days_text})")
-        
+
         print()
+
+    def export_to_json(self, root_issues, issues):
+        """导出为 JSON 文件，包含树和统计信息"""
+
+        def build_node(issue_num):
+            issue = self.issue_map.get(issue_num)
+            if not issue:
+                return None
+
+            children = [c for c in self.children_map.get(issue_num, []) if c in self.filtered_issue_nums]
+            children.sort()
+
+            node = {
+                "number": issue["number"],
+                "title": issue["title"],
+                "state": issue["state"],
+                "task_type": self.get_task_type(issue),
+                "priority": self.get_priority(issue)[1],
+                "due_date": self.get_due_date(issue),
+                "children": [],
+            }
+
+            for child in children:
+                child_node = build_node(child)
+                if child_node:
+                    node["children"].append(child_node)
+
+            return node
+
+        data = {
+            "repository": f"{self.owner}/{self.repo}",
+            "filters": {
+                "hide_closed": self.hide_closed,
+                "include_labels": sorted(self.include_labels),
+                "priorities": sorted(self.priorities),
+            },
+            "trees": [build_node(issue_num) for issue_num in root_issues],
+        }
+
+        # 追加统计数据
+        total = len(issues)
+        open_count = sum(1 for issue in issues if issue["state"] == "open")
+        closed_count = total - open_count
+        data["stats"] = {
+            "total": total,
+            "open": open_count,
+            "closed": closed_count,
+        }
+
+        try:
+            with open(self.export_json_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            print(f"已导出 JSON 到 {self.export_json_path}\n")
+        except OSError as exc:
+            print(f"⚠️  导出 JSON 失败：{exc}\n")
 
 
 def main():
@@ -361,6 +472,19 @@ def main():
         "--tag-config",
         help="标签配置文件路径（默认使用仓库内的 .github/tags-config.json）",
     )
+    parser.add_argument("--hide-closed", action="store_true", dest="hide_closed", default=True, help="隐藏已完成/关闭的任务（默认开启）")
+    parser.add_argument("--show-closed", action="store_false", dest="hide_closed", help="显示已完成/关闭的任务")
+    parser.add_argument("--include-label", dest="include_labels", action="append", default=[], help="仅显示包含指定标签的任务，可多次使用")
+    parser.add_argument(
+        "--priority",
+        dest="priorities",
+        action="append",
+        default=[],
+        choices=["critical", "high", "medium", "low"],
+        help="仅显示指定优先级的任务，可多次使用 (critical/high/medium/low)",
+    )
+    parser.add_argument("--no-details", action="store_true", help="树状输出中不显示括号内的详情")
+    parser.add_argument("--export-json", help="将结果导出为 JSON 文件路径")
 
     args = parser.parse_args()
     
@@ -408,7 +532,16 @@ def main():
     
     # 创建可视化器并运行
     tag_config = TagConfig(args.tag_config)
-    visualizer = TodoVisualizer(owner, repo, token, tag_config)
+    visualizer = TodoVisualizer(
+        owner,
+        repo,
+        token, tag_config,
+        hide_closed=args.hide_closed,
+        include_labels=args.include_labels,
+        priorities=args.priorities,
+        show_details=not args.no_details,
+        export_json_path=args.export_json,
+    )
     visualizer.fetch_issues()
     visualizer.build_hierarchy()
     visualizer.visualize()

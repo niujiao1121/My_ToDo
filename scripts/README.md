@@ -13,7 +13,9 @@
 - ⏰ **截止日期提醒**：显示任务的截止日期，并标记即将到期的任务
 - 🧩 **集中配置标签**：所有逻辑使用的标签名称均通过 `.github/tags-config.json` 配置，脚本读取后按配置解析任务类型和优先级
 - ✅ **状态追踪**：区分已完成和未完成的任务
-- 📈 **统计信息**：提供任务数量、优先级分布等统计数据
+- 📈 **统计信息**：提供任务数量、优先级分布、即将到期等统计数据
+- 🔍 **灵活过滤**：默认隐藏已完成任务（可用 `--show-closed` 显示），支持按标签/优先级筛选，控制是否显示详情
+- 💾 **导出 JSON**：可将树形结构与统计信息导出到文件，便于二次处理
 
 ### 安装依赖
 
@@ -80,6 +82,35 @@ python scripts/visualize_todos.py --owner niujiao1121 --repo My_ToDo
 ```bash
 python scripts/visualize_todos.py --token your_token_here
 ```
+
+#### 过滤与导出示例
+
+- 默认隐藏已完成任务，如需显示：
+
+```bash
+python scripts/visualize_todos.py --show-closed
+```
+
+- 仅显示指定标签：
+
+```bash
+python scripts/visualize_todos.py --include-label subtask
+```
+
+- 按优先级过滤并关闭详情：
+
+```bash
+python scripts/visualize_todos.py --priority critical --priority high --no-details
+```
+
+
+- 导出为 JSON（包含树和统计信息）：
+
+```bash
+python scripts/visualize_todos.py --export-json /tmp/todos.json
+```
+
+> 优先级可选值：`critical`、`high`、`medium`、`low`。
 
 ### 输出示例
 
