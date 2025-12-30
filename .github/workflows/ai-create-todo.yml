@@ -75,42 +75,95 @@ jobs:
               'help-wanted', 'good-first-issue', 'duplicate', 'wontfix', 'archived'
             ];
 
+            const stripTemplateSections = (text) => {
+              if (!text) return '';
+
+              let cleaned = text;
+              const sectionPatterns = [
+                /##\s*📋\s*任务描述[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*⏰\s*时间要求[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*✅\s*验收标准[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*📝\s*任务清单[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*🎯\s*完成条件[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*📝\s*实现思路[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*🔗\s*父任务[\s\S]*?(?=(\n##|$))/gi,
+                /---\s*\n\n\*此 TODO 由阿里云 AI 助手[\s\S]*$/i,
+                /\*此 TODO 由阿里云 AI 助手[\s\S]*$/i
+              ];
+
+              sectionPatterns.forEach((pattern) => {
+                cleaned = cleaned.replace(pattern, '');
+              });
+
+              cleaned = cleaned
+                .replace(/Parent Issue\s*[:：]\s*#?\d+/gi, '')
+                .replace(/原始输入来自[:：]\s*#?\d+/gi, '')
+                .replace(/属于#?\d+/gi, '')
+                .replace(/子任务\s*#?\d+/gi, '')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+
+              return cleaned;
+            };
+
+            const dedupeList = (list) => {
+              if (!Array.isArray(list)) return [];
+              const seen = new Set();
+              const result = [];
+              list.forEach((item) => {
+                const normalized = (item || '').trim();
+                if (!normalized) return;
+                if (seen.has(normalized)) return;
+                seen.add(normalized);
+                result.push(normalized);
+              });
+              return result;
+            };
+
             const buildIssueBodyFromParsedData = (parsedData, sourceIssueNumber) => {
               const parentIssueSection = parsedData.parent_issue
                 ? '\n\n## 🔗 父任务\n\n**Parent Issue**: #' + parsedData.parent_issue
                 : '';
 
+              const sanitizedDescription = stripTemplateSections(parsedData.description) || '待补充';
+
               if (parsedData.task_type === 'deadline') {
-                const acceptanceCriteria = parsedData.acceptance_criteria && parsedData.acceptance_criteria.length > 0
-                  ? parsedData.acceptance_criteria.map(c => '- [ ] ' + c).join('\n')
+                const acceptanceCriteria = dedupeList(parsedData.acceptance_criteria);
+                const taskChecklist = dedupeList(parsedData.task_checklist);
+
+                const acceptanceContent = acceptanceCriteria.length > 0
+                  ? acceptanceCriteria.map(c => '- [ ] ' + c).join('\n')
                   : '- [ ] 待补充';
-                const taskChecklist = parsedData.task_checklist && parsedData.task_checklist.length > 0
-                  ? parsedData.task_checklist.map(t => '- [ ] ' + t).join('\n')
+                const checklistContent = taskChecklist.length > 0
+                  ? taskChecklist.map(t => '- [ ] ' + t).join('\n')
                   : '- [ ] 待补充';
 
-                return '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n\n' +
+                return '## 📋 任务描述\n\n' + sanitizedDescription + parentIssueSection + '\n\n' +
                   '## ⏰ 时间要求\n\n' +
                   '**截止日期**: ' + (parsedData.due_date || '待定') + ' ⏰\n' +
                   '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
-                  '## ✅ 验收标准\n\n' + acceptanceCriteria + '\n\n' +
-                  '## 📝 任务清单\n\n' + taskChecklist + '\n\n' +
+                  '## ✅ 验收标准\n\n' + acceptanceContent + '\n\n' +
+                  '## 📝 任务清单\n\n' + checklistContent + '\n\n' +
                   '---\n\n' +
                   '*此 TODO 由阿里云 AI 助手生成/更新*\n' +
                   '*原始输入来自: #' + sourceIssueNumber + '*';
               }
 
-              const acceptanceCriteria = parsedData.acceptance_criteria && parsedData.acceptance_criteria.length > 0
-                ? parsedData.acceptance_criteria.map(c => '- [ ] ' + c).join('\n')
+              const acceptanceCriteria = dedupeList(parsedData.acceptance_criteria);
+              const taskChecklist = dedupeList(parsedData.task_checklist);
+
+              const acceptanceContent = acceptanceCriteria.length > 0
+                ? acceptanceCriteria.map(c => '- [ ] ' + c).join('\n')
                 : '- [ ] 待补充';
-              const taskChecklist = parsedData.task_checklist && parsedData.task_checklist.length > 0
-                ? parsedData.task_checklist.map((t, i) => (i + 1) + '. ' + t).join('\n')
+              const checklistContent = taskChecklist.length > 0
+                ? taskChecklist.map((t, i) => (i + 1) + '. ' + t).join('\n')
                 : '待补充';
 
-              return '## 📋 任务描述\n\n' + parsedData.description + parentIssueSection + '\n\n' +
+              return '## 📋 任务描述\n\n' + sanitizedDescription + parentIssueSection + '\n\n' +
                 '## 🎯 完成条件\n\n' +
                 '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
-                '**验收标准**: \n' + acceptanceCriteria + '\n\n' +
-                '## 📝 实现思路\n\n' + taskChecklist + '\n\n' +
+                '**验收标准**: \n' + acceptanceContent + '\n\n' +
+                '## 📝 实现思路\n\n' + checklistContent + '\n\n' +
                 '---\n\n' +
                 '*此 TODO 由阿里云 AI 助手生成/更新*\n' +
                 '*原始输入来自: #' + sourceIssueNumber + '*';
