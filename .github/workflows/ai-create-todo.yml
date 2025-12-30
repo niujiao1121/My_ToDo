@@ -20,10 +20,10 @@ jobs:
     
     # 只在以下情况运行：
     # 1. Issue 在被打上 ai-todo-inbox 标签时触发
-    # 2. 评论以 /todo 开头
+    # 2. 评论以 /todo 或 /fix 开头
     if: |
       (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ai-todo-inbox') ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/todo'))
+      (github.event_name == 'issue_comment' && (contains(github.event.comment.body, '/todo') || contains(github.event.comment.body, '/fix')))
     
     steps:
       - name: 检查权限
@@ -66,6 +66,280 @@ jobs:
         with:
           script: |
             const https = require('https');
+
+            const SYSTEM_LABELS = [
+              'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox',
+              'priority:critical', 'priority:high', 'priority:medium', 'priority:low',
+              'status:planning', 'status:in-progress', 'status:blocked', 'status:review', 'status:testing',
+              'type:feature', 'type:enhancement', 'type:bug', 'type:refactoring', 'type:documentation', 'type:research',
+              'help-wanted', 'good-first-issue', 'duplicate', 'wontfix', 'archived'
+            ];
+
+            const stripTemplateSections = (text) => {
+              if (!text) return '';
+
+              let cleaned = text;
+              const sectionPatterns = [
+                /##\s*📋\s*任务描述[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*⏰\s*时间要求[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*✅\s*验收标准[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*📝\s*任务清单[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*🎯\s*完成条件[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*📝\s*实现思路[\s\S]*?(?=(\n##|$))/gi,
+                /##\s*🔗\s*父任务[\s\S]*?(?=(\n##|$))/gi,
+                /---\s*\n\n\*此 TODO 由阿里云 AI 助手[\s\S]*$/i,
+                /\*此 TODO 由阿里云 AI 助手[\s\S]*$/i
+              ];
+
+              sectionPatterns.forEach((pattern) => {
+                cleaned = cleaned.replace(pattern, '');
+              });
+
+              cleaned = cleaned
+                .replace(/Parent Issue\s*[:：]\s*#?\d+/gi, '')
+                .replace(/原始输入来自[:：]\s*#?\d+/gi, '')
+                .replace(/属于#?\d+/gi, '')
+                .replace(/子任务\s*#?\d+/gi, '')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+
+              return cleaned;
+            };
+
+            const dedupeList = (list) => {
+              if (!Array.isArray(list)) return [];
+              const seen = new Set();
+              const result = [];
+              list.forEach((item) => {
+                const normalized = (item || '').trim();
+                if (!normalized) return;
+                if (seen.has(normalized)) return;
+                seen.add(normalized);
+                result.push(normalized);
+              });
+              return result;
+            };
+
+            const buildIssueBodyFromParsedData = (parsedData, sourceIssueNumber) => {
+              const parentIssueSection = parsedData.parent_issue
+                ? '\n\n## 🔗 父任务\n\n**Parent Issue**: #' + parsedData.parent_issue
+                : '';
+
+              const sanitizedDescription = stripTemplateSections(parsedData.description) || '待补充';
+
+              if (parsedData.task_type === 'deadline') {
+                const acceptanceCriteria = dedupeList(parsedData.acceptance_criteria);
+                const taskChecklist = dedupeList(parsedData.task_checklist);
+
+                const acceptanceContent = acceptanceCriteria.length > 0
+                  ? acceptanceCriteria.map(c => '- [ ] ' + c).join('\n')
+                  : '- [ ] 待补充';
+                const checklistContent = taskChecklist.length > 0
+                  ? taskChecklist.map(t => '- [ ] ' + t).join('\n')
+                  : '- [ ] 待补充';
+
+                return '## 📋 任务描述\n\n' + sanitizedDescription + parentIssueSection + '\n\n' +
+                  '## ⏰ 时间要求\n\n' +
+                  '**截止日期**: ' + (parsedData.due_date || '待定') + ' ⏰\n' +
+                  '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
+                  '## ✅ 验收标准\n\n' + acceptanceContent + '\n\n' +
+                  '## 📝 任务清单\n\n' + checklistContent + '\n\n' +
+                  '---\n\n' +
+                  '*此 TODO 由阿里云 AI 助手生成/更新*\n' +
+                  '*原始输入来自: #' + sourceIssueNumber + '*';
+              }
+
+              const acceptanceCriteria = dedupeList(parsedData.acceptance_criteria);
+              const taskChecklist = dedupeList(parsedData.task_checklist);
+
+              const acceptanceContent = acceptanceCriteria.length > 0
+                ? acceptanceCriteria.map(c => '- [ ] ' + c).join('\n')
+                : '- [ ] 待补充';
+              const checklistContent = taskChecklist.length > 0
+                ? taskChecklist.map((t, i) => (i + 1) + '. ' + t).join('\n')
+                : '待补充';
+
+              return '## 📋 任务描述\n\n' + sanitizedDescription + parentIssueSection + '\n\n' +
+                '## 🎯 完成条件\n\n' +
+                '**预计工作量**: ' + (parsedData.estimated_hours || '待评估') + '小时\n\n' +
+                '**验收标准**: \n' + acceptanceContent + '\n\n' +
+                '## 📝 实现思路\n\n' + checklistContent + '\n\n' +
+                '---\n\n' +
+                '*此 TODO 由阿里云 AI 助手生成/更新*\n' +
+                '*原始输入来自: #' + sourceIssueNumber + '*';
+            };
+
+            const handleFixCommand = async (fixPrompt) => {
+              const issue = context.payload.issue;
+              const issueNumber = issue.number;
+              const owner = context.repo.owner;
+              const repo = context.repo.repo;
+              const currentLabels = (issue.labels || []).map(l => typeof l === 'string' ? l : l.name);
+              const currentPriorityLabel = currentLabels.find(l => l.startsWith('priority:'));
+              const currentPriority = currentPriorityLabel ? currentPriorityLabel.split(':')[1] : 'medium';
+              const currentTaskType = currentLabels.includes('task-with-deadline') ? 'deadline' : 'open';
+              const currentBody = issue.body || '';
+              const currentDueMatch = currentBody.match(/截止日期\*\*:\s*([0-9]{4}-[0-9]{2}-[0-9]{2}|待定)/);
+              const currentDue = currentDueMatch && currentDueMatch[1] !== '待定' ? currentDueMatch[1] : null;
+              const parentMatch = currentBody.match(/Parent Issue\*\*:\s*#(\d+)/i) || currentBody.match(/原始输入来自[:：]?\s*#(\d+)/i) || currentBody.match(/属于#?(\d+)/i);
+              const currentParent = parentMatch ? parentMatch[1] : null;
+
+              const fixSystemPrompt = '你是一个专业的 TODO 维护助手。根据用户提供的修改指令和当前 TODO 内容，返回更新后的结构化数据。' +
+                '如果用户没有明确修改某个字段，请保留当前值。确保输出字段遵循以下格式：\n' +
+                '{\n' +
+                '  "title": "更新后的标题",\n' +
+                '  "description": "更新后的任务描述，保留关键背景信息",\n' +
+                '  "parent_issue": "父任务编号或 null",\n' +
+                '  "due_date": "YYYY-MM-DD 或 null",\n' +
+                '  "priority": "critical/high/medium/low",\n' +
+                '  "estimated_hours": "预计工时，保留或按需求调整",\n' +
+                '  "acceptance_criteria": ["验收标准1", "验收标准2"],\n' +
+                '  "task_checklist": ["步骤1", "步骤2"],\n' +
+                '  "task_type": "deadline 或 open，基于是否有截止日期"\n' +
+                '}\n' +
+                '需要确保截止时间、父子任务关系等信息格式符合当前仓库的惯例。只返回 JSON，不要包含其他文字。';
+
+              const fixUserPrompt = '当前 TODO 信息：\n' +
+                '- 标题: ' + issue.title + '\n' +
+                '- 当前父任务: ' + (currentParent || '无') + '\n' +
+                '- 当前截止日期: ' + (currentDue || '无') + '\n' +
+                '- 当前优先级: ' + currentPriority + '\n' +
+                '- 当前任务类型: ' + currentTaskType + '\n' +
+                '- 当前标签: ' + (currentLabels.join(', ') || '无') + '\n' +
+                '- 当前正文: \n' + currentBody + '\n\n' +
+                '用户的修改指令：\n' + fixPrompt;
+
+              let aiResponse;
+              try {
+                const postData = JSON.stringify({
+                  model: 'qwen-plus',
+                  messages: [
+                    { role: 'system', content: fixSystemPrompt },
+                    { role: 'user', content: fixUserPrompt }
+                  ],
+                  temperature: 0.3,
+                  response_format: { type: 'json_object' }
+                });
+
+                const options = {
+                  hostname: 'dashscope.aliyuncs.com',
+                  path: '/compatible-mode/v1/chat/completions',
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + process.env.DASHSCOPE_API_KEY,
+                    'Content-Length': Buffer.byteLength(postData)
+                  }
+                };
+
+                aiResponse = await new Promise((resolve, reject) => {
+                  const req = https.request(options, (res) => {
+                    let data = '';
+                    res.on('data', (chunk) => { data += chunk; });
+                    res.on('end', () => {
+                      if (res.statusCode === 200) {
+                        resolve(JSON.parse(data));
+                      } else {
+                        reject(new Error('API 请求失败: ' + res.statusCode + ' - ' + data));
+                      }
+                    });
+                  });
+
+                  req.on('error', (error) => reject(error));
+                  req.write(postData);
+                  req.end();
+                });
+              } catch (apiError) {
+                core.error('调用 AI 修复接口失败：' + apiError.message);
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: '❌ AI 更新 TODO 失败：' + apiError.message
+                });
+                return;
+              }
+
+              let parsedData;
+              try {
+                parsedData = JSON.parse(aiResponse.choices[0].message.content);
+              } catch (parseError) {
+                core.error('解析 AI 修复结果失败：' + parseError.message);
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: '❌ AI 返回结果解析失败：' + parseError.message
+                });
+                return;
+              }
+
+              parsedData.title = parsedData.title || issue.title;
+              parsedData.task_type = parsedData.task_type || currentTaskType;
+
+              const issueBody = buildIssueBodyFromParsedData(parsedData, issueNumber);
+
+              const taskTypeLabel = parsedData.task_type === 'deadline' ? 'task-with-deadline' : 'task-open';
+              const priorityLabel = 'priority:' + (parsedData.priority || currentPriority || 'medium');
+              const preservedLabels = currentLabels.filter(l => !SYSTEM_LABELS.includes(l) || l === 'subtask');
+              const finalLabels = preservedLabels
+                .filter(l => !l.startsWith('priority:') && l !== 'task-with-deadline' && l !== 'task-open')
+                .concat([taskTypeLabel, priorityLabel]);
+
+              if (parsedData.parent_issue) {
+                if (!finalLabels.includes('subtask')) {
+                  finalLabels.push('subtask');
+                }
+              } else {
+                const idx = finalLabels.indexOf('subtask');
+                if (idx >= 0) finalLabels.splice(idx, 1);
+              }
+
+              let milestoneNumber = null;
+              if (parsedData.due_date && parsedData.task_type === 'deadline') {
+                try {
+                  const milestoneTitle = parsedData.due_date + ' Deadline';
+                  const { data: existingMilestones } = await github.rest.issues.listMilestones({
+                    owner,
+                    repo,
+                    state: 'open'
+                  });
+
+                  const existingMilestone = existingMilestones.find(m => m.title === milestoneTitle);
+
+                  if (existingMilestone) {
+                    milestoneNumber = existingMilestone.number;
+                  } else {
+                    const { data: newMilestone } = await github.rest.issues.createMilestone({
+                      owner,
+                      repo,
+                      title: milestoneTitle,
+                      due_on: parsedData.due_date + 'T23:59:59Z'
+                    });
+                    milestoneNumber = newMilestone.number;
+                  }
+                } catch (milestoneError) {
+                  core.warning('创建/查找 milestone 时出错：' + milestoneError.message);
+                }
+              }
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                title: parsedData.title,
+                body: issueBody,
+                labels: finalLabels,
+                milestone: parsedData.task_type === 'deadline' ? milestoneNumber : null
+              });
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: '✅ AI 已根据提示更新 TODO。\n\n- 标题: ' + parsedData.title + '\n- 截止日期: ' + (parsedData.due_date || '无') + '\n- 父任务: ' + (parsedData.parent_issue ? ('#' + parsedData.parent_issue) : '无')
+              });
+            };
             
             // 获取用户输入
             let userInputs = []; // 改为数组以支持批量创建
@@ -89,6 +363,23 @@ jobs:
               sourceIssueNumber = context.payload.issue.number;
               // 当从评论创建时，自动设置父任务为被评论的issue
               autoParentIssue = sourceIssueNumber;
+
+              const fixMatch = comment.match(/^\/fix\s+([\s\S]+)/im);
+              if (fixMatch) {
+                const fixPrompt = fixMatch[1].trim();
+                if (!fixPrompt) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: sourceIssueNumber,
+                    body: '❌ /fix 指令后需要提供修改说明。'
+                  });
+                  return;
+                }
+
+                await handleFixCommand(fixPrompt);
+                return;
+              }
 
               // 检测多个 /todo 命令（支持批量创建）
               const todoPattern = /^\/todo\s+(.+)$/gmi;
