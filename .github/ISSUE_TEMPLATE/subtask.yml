@@ -1,0 +1,53 @@
+name: 子任务
+description: 快速创建子任务，包含父任务链接与验收标准
+title: '[SUBTASK] '
+labels: ['subtask']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: 适用于拆分父任务的子项；请附上父任务链接。
+  - type: textarea
+    id: goal
+    attributes:
+      label: 子任务目标（必填）
+      description: 说明要完成什么，最好是可交付的结果。
+      placeholder: 例如：补充移动端离线同步的失败重试逻辑
+    validations:
+      required: true
+  - type: input
+    id: parent
+    attributes:
+      label: 父任务链接（必填）
+      description: 链接到所属的父 Issue，例如 #123。
+      placeholder: 例如：#123 或完整链接
+    validations:
+      required: true
+  - type: dropdown
+    id: relation
+    attributes:
+      label: 关联类型（可选）
+      options:
+        - 子任务
+        - 依赖
+        - 跟进
+      default: 0
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准（必填，1-3 条）
+      description: 列出可验证的结果或检查步骤。
+      placeholder: |
+        - [ ] 场景1：...
+        - [ ] 场景2：...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 备注（可选）
+      description: 依赖、资源或其他补充信息。
+    validations:
+      required: false
