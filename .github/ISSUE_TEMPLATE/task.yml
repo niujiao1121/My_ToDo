@@ -1,0 +1,63 @@
+name: 任务（含可选截止日期）
+description: 常规任务模板，字段精简并提供必填/可选提示
+title: '[TASK] '
+labels: ['task']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请保持简洁：核心信息必填，其余字段按需补充。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 简要描述（必填）
+      description: 2-3 句话说明要做什么、预期价值。
+      placeholder: 例如：为 Web 端添加快捷键支持，提升桌面用户效率
+    validations:
+      required: true
+  - type: input
+    id: deadline
+    attributes:
+      label: 截止日期（可选）
+      description: 日期格式建议 YYYY-MM-DD。
+      placeholder: 2024-07-31
+    validations:
+      required: false
+  - type: input
+    id: workload
+    attributes:
+      label: 预计工作量（可选）
+      placeholder: 例如：3 天 / 5 人日 / 8 story points
+    validations:
+      required: false
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级（可选）
+      options:
+        - 未指定
+        - 高
+        - 中
+        - 低
+      default: 0
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准（必填，2-3 条）
+      description: 列出可验证的结果或检查步骤，建议使用清单格式。
+      placeholder: |
+        - [ ] 场景1：...
+        - [ ] 场景2：...
+        - [ ] 场景3：...
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: 关联与标签（可选）
+      description: 父任务/相关任务链接，或建议添加的模块/类型标签。
+    validations:
+      required: false
