@@ -1,6 +1,6 @@
 name: "AI 快速创建 TODO"
 description: 一句话描述任务，阿里云 AI 自动补全树状 TODO（详细用法见 docs/AI_SETUP.md）
-title: ''
+title: '[AI-TODO]'
 labels: ['ai-todo-inbox']
 assignees: []
 body:
