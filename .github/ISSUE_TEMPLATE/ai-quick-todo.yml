@@ -1,0 +1,19 @@
+name: 🤖 AI 快速创建 TODO
+description: 一句话描述任务，阿里云 AI 自动补全树状 TODO（详细用法见 docs/AI_SETUP.md）
+title: ''
+labels: ['ai-todo-inbox']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        使用提示：尽量用一句话写清要做的事，提交后 AI 会自动生成标准 TODO。
+        详细说明见 [AI_SETUP.md](docs/AI_SETUP.md)。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 我要做的事
+      description: 用一句话描述要做的事；AI 会自动补全细节。
+      placeholder: 例如：为移动端添加离线待办同步并写验收用例
+    validations:
+      required: true

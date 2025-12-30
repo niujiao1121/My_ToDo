@@ -1,0 +1,113 @@
+name: 项目/大型任务
+description: 适用于跨 Sprint 或多人协作的大型任务，包含里程碑与子任务规划
+title: '[PROJECT] '
+labels: ['project']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: 适用于跨 Sprint 或多人协作的大任务；小需求请使用“任务”模板。
+  - type: input
+    id: project_name
+    attributes:
+      label: 项目名称（必填）
+      placeholder: 例如：跨平台离线同步重构
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: 项目目标（必填）
+      description: 描述项目要达成的主要目标与预期收益。
+      placeholder: 用 2-3 条列出核心目标或价值
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 当前阶段（可选）
+      options:
+        - 规划中
+        - 设计中
+        - 开发中
+        - 测试中
+        - 发布准备
+      default: 0
+    validations:
+      required: false
+  - type: input
+    id: start_date
+    attributes:
+      label: 开始日期（可选）
+      placeholder: YYYY-MM-DD
+    validations:
+      required: false
+  - type: input
+    id: due_date
+    attributes:
+      label: 预计完成（可选）
+      placeholder: YYYY-MM-DD
+    validations:
+      required: false
+  - type: input
+    id: milestone
+    attributes:
+      label: 关联 Milestone（可选）
+      description: 已有的里程碑名称或链接，方便自动归档。
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 主要功能模块
+      description: 列出关键模块并勾选需要交付的项，可在提交后编辑。
+      options:
+        - label: 模块1
+        - label: 模块2
+        - label: 模块3
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: 不包括的内容（可选）
+      placeholder: 例如：本期不包含移动端适配
+    validations:
+      required: false
+  - type: textarea
+    id: milestones
+    attributes:
+      label: 关键里程碑（可选）
+      description: 如需自定义里程碑，请按清单列出。
+      placeholder: |
+        - [ ] 里程碑1 - 需求确认
+        - [ ] 里程碑2 - 设计完成
+        - [ ] 里程碑3 - 开发完成
+    validations:
+      required: false
+  - type: textarea
+    id: subtasks
+    attributes:
+      label: 子任务列表（可选）
+      description: 创建子 Issue 后，在此添加链接。
+      placeholder: "- [ ] #issue_number - 子任务描述"
+    validations:
+      required: false
+  - type: textarea
+    id: members
+    attributes:
+      label: 相关人员（可选）
+      placeholder: "负责人: @\n参与者: @"
+    validations:
+      required: false
+  - type: textarea
+    id: resources
+    attributes:
+      label: 相关资源（可选）
+      placeholder: "- 需求文档:\n- 设计文档:\n- 技术方案:"
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: 备注（可选）
+    validations:
+      required: false
