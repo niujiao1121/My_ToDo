@@ -476,13 +476,33 @@ jobs:
                   // 匹配 **项目标签**: 后面的内容，跳过所有HTML注释
                   const projectLabelsMatch = parentBody.match(/\*\*项目标签\*\*:\s*(?:<!--[\s\S]*?-->\s*)*([^\n<]+)/);
 
+                  const sanitizeLabel = (label) => {
+                    // 移除 Markdown 前缀、项目符号和分隔符，避免将 "##"、"-" 等解析成标签
+                    const cleaned = label
+                      .replace(/^[#*\-\u2022•\s]+/, '')
+                      .replace(/[#,，\s]+$/g, '')
+                      .trim();
+
+                    // 过滤空值、控制字符，避免触发 GitHub 的 "Validation Failed" 报错
+                    if (!cleaned || /[\p{C}]/u.test(cleaned)) {
+                      return null;
+                    }
+
+                    // GitHub 标签名称最大长度 50，超出则丢弃
+                    if (cleaned.length > 50) {
+                      return null;
+                    }
+
+                    return cleaned;
+                  };
+
                   let projectLabels = [];
                   if (projectLabelsMatch && projectLabelsMatch[1]) {
                     const labelText = projectLabelsMatch[1].trim();
                     if (labelText && labelText !== '' && labelText !== '-' && labelText !== 'N/A') {
                       // 解析标签，支持逗号、空格、中文逗号分隔
                       projectLabels = labelText.split(/[,，\s]+/)
-                        .map(l => l.trim())
+                        .map(l => sanitizeLabel(l))
                         .filter(l => l && l !== '' && l !== '-');
                       core.info('从父任务提取到项目标签: ' + projectLabels.join(', '));
                     }
@@ -518,6 +538,8 @@ jobs:
 
                   // 将项目标签添加到新创建的子任务
                   if (projectLabels.length > 0) {
+                    projectLabels = [...new Set(projectLabels.map(l => sanitizeLabel(l)).filter(Boolean))];
+
                     const currentLabels = newIssue.data.labels.map(l =>
                       typeof l === 'string' ? l : l.name
                     );
