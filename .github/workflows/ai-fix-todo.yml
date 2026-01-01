@@ -200,7 +200,10 @@ jobs:
             const parentMatch = currentBody.match(/Parent Issue\*\*:\s*#(\d+)/i) || currentBody.match(/原始输入来自[:：]?\s*#(\d+)/i) || currentBody.match(/属于#?(\d+)/i);
             const currentParent = parentMatch ? parentMatch[1] : null;
 
+            const currentDate = new Date().toISOString().split('T')[0];
+
             const fixSystemPrompt = '你是一个专业的 TODO 维护助手。根据用户提供的修改指令和当前 TODO 内容，返回更新后的结构化数据。' +
+              '当前日期: ' + currentDate + '。如果用户使用了相对日期（今天、明天、后天、下周、下周X、月底等），请计算出对应的 YYYY-MM-DD 绝对日期。' +
               '如果用户没有明确修改某个字段，请保留当前值。确保输出字段遵循以下格式：\n' +
               '{\n' +
               '  "title": "更新后的标题",\n' +
@@ -212,7 +215,16 @@ jobs:
               '  "acceptance_criteria": ["验收标准1", "验收标准2"],\n' +
               '  "task_checklist": ["步骤1", "步骤2"],\n' +
               '  "task_type": "deadline 或 open，基于是否有截止日期"\n' +
-              '}\n' +
+              '}\n\n' +
+              '日期识别规则：\n' +
+              '- "今天" -> ' + currentDate + '\n' +
+              '- "明天" -> 当前日期+1天\n' +
+              '- "后天" -> 当前日期+2天\n' +
+              '- "下周" -> 当前日期+7天\n' +
+              '- "下周一/二/..." -> 计算下周对应的日期\n' +
+              '- "下月" -> 当前日期+30天\n' +
+              '- "月底" -> 当月最后一天\n' +
+              '- 具体日期如 "12月25日" -> 转换为 YYYY-MM-DD\n\n' +
               '需要确保截止时间、父子任务关系等信息格式符合当前仓库的惯例。只返回 JSON，不要包含其他文字。';
 
             const fixUserPrompt = '当前 TODO 信息：\n' +
