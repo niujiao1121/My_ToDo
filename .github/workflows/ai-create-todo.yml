@@ -513,9 +513,10 @@ jobs:
                   let projectLabels = [];
                   if (projectLabelsMatch && projectLabelsMatch[1]) {
                     const labelText = projectLabelsMatch[1].trim();
+                    const normalizedLabelText = labelText.replace(/\s*:\s*/g, ':');
                     if (labelText && labelText !== '' && labelText !== '-' && labelText !== 'N/A') {
                       // 解析标签，支持逗号、空格、中文逗号分隔
-                      projectLabels = labelText.split(/[,，\s]+/)
+                      projectLabels = normalizedLabelText.split(/[,，\s]+/)
                         .map(l => sanitizeLabel(l))
                         .filter(l => l && l !== '' && l !== '-');
                       core.info('从父任务提取到项目标签: ' + projectLabels.join(', '));
