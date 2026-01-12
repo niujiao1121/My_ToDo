@@ -344,6 +344,20 @@ jobs:
               parsedData = JSON.parse(content);
               core.info('解析后的数据：' + JSON.stringify(parsedData));
               
+              const normalizeParentIssue = (value) => {
+                if (value === null || value === undefined) {
+                  return null;
+                }
+                const text = String(value).trim();
+                if (!text) {
+                  return null;
+                }
+                const match = text.match(/\d+/);
+                return match ? match[0] : null;
+              };
+
+              parsedData.parent_issue = normalizeParentIssue(parsedData.parent_issue);
+
               // 如果从评论创建且AI没有识别出父任务，使用自动检测的父任务
               if (autoParentIssue && !parsedData.parent_issue) {
                 parsedData.parent_issue = autoParentIssue.toString();
