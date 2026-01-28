@@ -487,12 +487,45 @@ jobs:
               
               const newIssue = await github.rest.issues.create(issueParams);
               
-              // 如果指定了父任务，尝试更新父任务并继承项目标签
-              const parentIssueNumber = parsedData.parent_issue ? parseInt(parsedData.parent_issue) : null;
-              if (parentIssueNumber) {
-                try {
-                  const fetchParentIssue = async () => github.rest.issues.get({
-                    owner: context.repo.owner,
+            const sanitizeLabel = (label) => {
+              // 移除 Markdown 前缀、项目符号和分隔符，避免将 "##"、"-" 等解析成标签
+              const cleaned = String(label || '')
+                .replace(/^[#*\-\u2022•\s]+/, '')
+                .replace(/[#,，\s]+$/g, '')
+                .trim();
+
+              // 过滤空值、控制字符，避免触发 GitHub 的 "Validation Failed" 报错
+              if (!cleaned || /[\p{C}]/u.test(cleaned)) {
+                return null;
+              }
+
+              // GitHub 标签名称最大长度 50，超出则丢弃
+              if (cleaned.length > 50) {
+                return null;
+              }
+
+              return cleaned;
+            };
+
+            const collectCustomLabels = ({ sourceLabels = [], existingLabels = [], projectLabels = [] }) => {
+              const customLabels = [...projectLabels];
+              sourceLabels.forEach(label => {
+                const labelName = typeof label === 'string' ? label : label.name;
+                if (!SYSTEM_LABELS.includes(labelName) && !customLabels.includes(labelName)) {
+                  customLabels.push(labelName);
+                }
+              });
+
+              const sanitized = [...new Set(customLabels.map(l => sanitizeLabel(l)).filter(Boolean))];
+              return sanitized.filter(label => !existingLabels.includes(label));
+            };
+
+            // 如果指定了父任务，尝试更新父任务并继承项目标签
+            const parentIssueNumber = parsedData.parent_issue ? parseInt(parsedData.parent_issue) : null;
+            if (parentIssueNumber) {
+              try {
+                const fetchParentIssue = async () => github.rest.issues.get({
+                  owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: parentIssueNumber
                   });
@@ -503,26 +536,6 @@ jobs:
                   const parentBody = parentIssue.data.body || '';
                   // 匹配 **项目标签**: 后面的内容，跳过所有HTML注释
                   const projectLabelsMatch = parentBody.match(/\*\*项目标签\*\*:\s*(?:<!--[\s\S]*?-->\s*)*([^\n<]+)/);
-
-                  const sanitizeLabel = (label) => {
-                    // 移除 Markdown 前缀、项目符号和分隔符，避免将 "##"、"-" 等解析成标签
-                    const cleaned = label
-                      .replace(/^[#*\-\u2022•\s]+/, '')
-                      .replace(/[#,，\s]+$/g, '')
-                      .trim();
-
-                    // 过滤空值、控制字符，避免触发 GitHub 的 "Validation Failed" 报错
-                    if (!cleaned || /[\p{C}]/u.test(cleaned)) {
-                      return null;
-                    }
-
-                    // GitHub 标签名称最大长度 50，超出则丢弃
-                    if (cleaned.length > 50) {
-                      return null;
-                    }
-
-                    return cleaned;
-                  };
 
                   let projectLabels = [];
                   if (projectLabelsMatch && projectLabelsMatch[1]) {
@@ -537,52 +550,24 @@ jobs:
                     }
                   }
 
-                  // 如果父任务是 project 类型，也尝试从其标签中提取自定义标签
                   const parentLabels = parentIssue.data.labels || [];
-                  const isProject = parentLabels.some(label =>
-                    typeof label === 'string' ? label === 'project' : label.name === 'project'
+                  const currentLabels = newIssue.data.labels.map(l =>
+                    typeof l === 'string' ? l : l.name
                   );
+                  const labelsToAdd = collectCustomLabels({
+                    sourceLabels: parentLabels,
+                    existingLabels: currentLabels,
+                    projectLabels
+                  });
 
-                  if (isProject) {
-                    // 提取父任务中的自定义标签（不是系统预定义的标签）
-                    // Note: This system labels list is maintained in .github/tags-config.json
-                    // It's hardcoded here for performance (no file read needed at runtime)
-                    // When updating tags, update both tags-config.json AND this list
-                    const systemLabels = [
-                      'project', 'epic', 'task-with-deadline', 'task-open', 'subtask', 'ai-todo-inbox',
-                      'priority:critical', 'priority:high', 'priority:medium', 'priority:low',
-                      'status:planning', 'status:in-progress', 'status:blocked', 'status:review', 'status:testing',
-                      'type:feature', 'type:enhancement', 'type:bug', 'type:refactoring', 'type:documentation', 'type:research',
-                      'help-wanted', 'good-first-issue', 'duplicate', 'wontfix', 'archived'
-                    ];
-
-                    parentLabels.forEach(label => {
-                      const labelName = typeof label === 'string' ? label : label.name;
-                      if (!systemLabels.includes(labelName) && !projectLabels.includes(labelName)) {
-                        projectLabels.push(labelName);
-                        core.info('从父任务标签继承: ' + labelName);
-                      }
+                  if (labelsToAdd.length > 0) {
+                    await github.rest.issues.addLabels({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: newIssue.data.number,
+                      labels: labelsToAdd
                     });
-                  }
-
-                  // 将项目标签添加到新创建的子任务
-                  if (projectLabels.length > 0) {
-                    projectLabels = [...new Set(projectLabels.map(l => sanitizeLabel(l)).filter(Boolean))];
-
-                    const currentLabels = newIssue.data.labels.map(l =>
-                      typeof l === 'string' ? l : l.name
-                    );
-                    const labelsToAdd = projectLabels.filter(l => !currentLabels.includes(l));
-
-                    if (labelsToAdd.length > 0) {
-                      await github.rest.issues.addLabels({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: newIssue.data.number,
-                        labels: labelsToAdd
-                      });
-                      core.info('成功为子任务添加项目标签: ' + labelsToAdd.join(', '));
-                    }
+                    core.info('成功为子任务添加项目标签: ' + labelsToAdd.join(', '));
                   }
 
                   // 在父任务中添加子任务链接，避免重复并兼容不同格式的子任务清单
@@ -639,6 +624,27 @@ jobs:
                 } catch (error) {
                   core.warning('更新父任务失败：' + error.message);
                   // 即使更新父任务失败，也继续处理
+                }
+              }
+
+              if (context.eventName === 'issues') {
+                const sourceLabels = context.payload.issue.labels || [];
+                const currentLabels = newIssue.data.labels.map(l =>
+                  typeof l === 'string' ? l : l.name
+                );
+                const labelsToAdd = collectCustomLabels({
+                  sourceLabels,
+                  existingLabels: currentLabels
+                });
+
+                if (labelsToAdd.length > 0) {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: newIssue.data.number,
+                    labels: labelsToAdd
+                  });
+                  core.info('成功为 TODO 继承原始 Issue 标签: ' + labelsToAdd.join(', '));
                 }
               }
               
