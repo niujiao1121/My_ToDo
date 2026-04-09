@@ -265,7 +265,7 @@ jobs:
             let aiResponse;
             try {
               const postData = JSON.stringify({
-                model: 'qwen-plus',
+                model: 'qwen3.6-plus-2026-04-02',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: userPrompt }
